@@ -1,0 +1,103 @@
+package com.example.farmmobileapp.adapters;
+
+import android.content.Context;
+import android.content.Intent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.example.farmmobileapp.OrderFormActivity;
+import com.example.farmmobileapp.R;
+import com.example.farmmobileapp.models.Product;
+import com.example.farmmobileapp.utils.Constants;
+import com.example.farmmobileapp.utils.ImageUtils;
+
+import java.util.List;
+import java.util.Locale;
+
+public class ProductAdapter extends BaseAdapter {
+
+    private Context context;
+    private List<Product> productList;
+    private LayoutInflater inflater;
+
+    public ProductAdapter(Context context, List<Product> productList) {
+        this.context = context;
+        this.productList = productList;
+        this.inflater = LayoutInflater.from(context);
+    }
+
+    @Override
+    public int getCount() {
+        return productList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        return productList.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        ViewHolder holder;
+
+        if (convertView == null) {
+            convertView = inflater.inflate(R.layout.item_product, parent, false);
+            holder = new ViewHolder();
+            holder.imgProduct = convertView.findViewById(R.id.imgProduct);
+            holder.tvProductName = convertView.findViewById(R.id.tvProductName);
+            holder.tvFarmerName = convertView.findViewById(R.id.tvFarmerName);
+            holder.tvPrice = convertView.findViewById(R.id.tvPrice);
+            holder.tvQuantity = convertView.findViewById(R.id.tvQuantity);
+            holder.btnPlaceOrder = convertView.findViewById(R.id.btnPlaceOrder);
+            convertView.setTag(holder);
+        } else {
+            holder = (ViewHolder) convertView.getTag();
+        }
+
+        final Product product = productList.get(position);
+
+        // Set product details
+        holder.tvProductName.setText(product.getName());
+        holder.tvFarmerName.setText(product.getFarmerName());
+        holder.tvPrice.setText(String.format(Locale.getDefault(), "$%.2f", product.getPrice()));
+        holder.tvQuantity.setText(String.format(Locale.getDefault(), "%d available", product.getQuantity()));
+
+        // Load image using ImageUtils
+        if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
+            ImageUtils.loadImage(context, product.getImageUrl(), holder.imgProduct);
+        } else {
+            holder.imgProduct.setImageResource(R.drawable.placeholder_product);
+        }
+
+        // Set place order button click listener
+        holder.btnPlaceOrder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(context, OrderFormActivity.class);
+                intent.putExtra(Constants.EXTRA_PRODUCT_ID, product.getId());
+                context.startActivity(intent);
+            }
+        });
+
+        return convertView;
+    }
+
+    private static class ViewHolder {
+        ImageView imgProduct;
+        TextView tvProductName;
+        TextView tvFarmerName;
+        TextView tvPrice;
+        TextView tvQuantity;
+        Button btnPlaceOrder;
+    }
+}
