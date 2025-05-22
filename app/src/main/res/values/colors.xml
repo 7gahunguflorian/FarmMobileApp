@@ -2,4 +2,29 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Primary colors -->
+    <color name="green_primary">#4CAF50</color>
+    <color name="green_dark">#388E3C</color>
+    <color name="green_light">#C8E6C9</color>
+
+    <!-- Secondary colors -->
+    <color name="orange_accent">#FF9800</color>
+    <color name="orange_dark">#F57C00</color>
+    <color name="orange_light">#FFE0B2</color>
+
+    <!-- Text colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#BDBDBD</color>
+
+    <!-- Background colors -->
+    <color name="background_light">#FAFAFA</color>
+    <color name="background_card">#FFFFFF</color>
+
+    <!-- Status colors -->
+    <color name="status_success">#4CAF50</color>
+    <color name="status_warning">#FF9800</color>
+    <color name="status_error">#F44336</color>
+    <color name="status_info">#2196F3</color>
 </resources>
