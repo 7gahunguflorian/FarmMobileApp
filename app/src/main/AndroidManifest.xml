@@ -2,7 +2,26 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Internet permissions for API calls -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Storage permissions for image upload -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Camera permission (optional, if you want to add camera functionality) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Hardware feature for camera (not required) -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <!-- Allow cleartext traffic for local development -->
     <application
+        android:name=".FarmApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -11,16 +30,48 @@
         android:roundIcon="@drawable/applogo"
         android:supportsRtl="true"
         android:theme="@style/Theme.FarmMobileApp"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
+
+        <!-- Main/Splash Activity -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.FarmMobileApp.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
+        <!-- Login Activity -->
+        <activity
+            android:name=".activities.LoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Register Activity -->
+        <activity
+            android:name=".activities.RegisterActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Main Client Activity -->
+        <activity
+            android:name=".activities.MainClientActivity"
+            android:exported="false" />
+
+        <!-- Main Farmer Activity -->
+        <activity
+            android:name=".activities.MainFarmerActivity"
+            android:exported="false" />
+
+        <!-- Order Form Activity -->
+        <activity
+            android:name=".activities.OrderFormActivity"
+            android:exported="false"
+            android:parentActivityName=".activities.MainClientActivity"
+            android:windowSoftInputMode="adjustResize" />
+
+    </application>
 </manifest>
