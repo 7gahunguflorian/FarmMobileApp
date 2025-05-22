@@ -10,11 +10,12 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.example.farmmobileapp.OrderFormActivity;
+import com.bumptech.glide.Glide;
+import com.example.farmmobileapp.activities.OrderFormActivity;
 import com.example.farmmobileapp.R;
+import com.example.farmmobileapp.network.RetrofitClient;
 import com.example.farmmobileapp.models.Product;
 import com.example.farmmobileapp.utils.Constants;
-import com.example.farmmobileapp.utils.ImageUtils;
 
 import java.util.List;
 import java.util.Locale;
@@ -68,13 +69,22 @@ public class ProductAdapter extends BaseAdapter {
 
         // Set product details
         holder.tvProductName.setText(product.getName());
-        holder.tvFarmerName.setText(product.getFarmerName());
+        holder.tvFarmerName.setText(product.getFarmerName() != null ? product.getFarmerName() : "Unknown Farmer");
         holder.tvPrice.setText(String.format(Locale.getDefault(), "$%.2f", product.getPrice()));
-        holder.tvQuantity.setText(String.format(Locale.getDefault(), "%d available", product.getQuantity()));
+        holder.tvQuantity.setText(String.format(Locale.getDefault(), "%d available", product.getAvailableQuantity()));
 
-        // Load image using ImageUtils
+        // Load image using Glide
         if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
-            ImageUtils.loadImage(context, product.getImageUrl(), holder.imgProduct);
+            String imageUrl = product.getImageUrl();
+            if (!imageUrl.startsWith("http")) {
+                imageUrl = RetrofitClient.BASE_URL + "images/" + imageUrl;
+            }
+
+            Glide.with(context)
+                    .load(imageUrl)
+                    .placeholder(R.drawable.placeholder_product)
+                    .error(R.drawable.placeholder_product)
+                    .into(holder.imgProduct);
         } else {
             holder.imgProduct.setImageResource(R.drawable.placeholder_product);
         }
@@ -84,7 +94,7 @@ public class ProductAdapter extends BaseAdapter {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(context, OrderFormActivity.class);
-                intent.putExtra(Constants.EXTRA_PRODUCT_ID, product.getId());
+                intent.putExtra(Constants.EXTRA_PRODUCT_ID, product.getId().toString());
                 context.startActivity(intent);
             }
         });
