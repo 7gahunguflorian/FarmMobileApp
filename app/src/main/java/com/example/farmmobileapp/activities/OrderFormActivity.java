@@ -1,5 +1,6 @@
 package com.example.farmmobileapp.activities;
 
+import com.example.farmmobileapp.R;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -72,18 +73,19 @@ public class OrderFormActivity extends AppCompatActivity {
         setupClickListeners();
     }
     private void initViews() {
-        tvProductName = findViewById(R.id.tvProductName);
-        tvProductPrice = findViewById(R.id.tvProductPrice);
-        tvFarmerName = findViewById(R.id.tvFarmerName);
-        tvProductDescription = findViewById(R.id.tvProductDescription);
-        tvTotalPrice = findViewById(R.id.tvTotalPrice);
-        tvAvailableQuantity = findViewById(R.id.tvAvailableQuantity);
-        imgProduct = findViewById(R.id.imgProduct);
-        etQuantity = findViewById(R.id.etQuantity);
-        etDeliveryLocation = findViewById(R.id.etDeliveryLocation);
-        btnPlaceOrder = findViewById(R.id.btnPlaceOrder);
-        progressBar = findViewById(R.id.progressBar);
+        tvProductName = findViewById(R.id.textViewProductName);
+        tvProductPrice = findViewById(R.id.textViewPricePerUnit);
+        tvFarmerName = findViewById(R.id.textViewFarmerName);
+        tvProductDescription = findViewById(R.id.textViewDescription);
+        tvTotalPrice = findViewById(R.id.textViewTotalPrice);
+        tvAvailableQuantity = findViewById(R.id.textViewAvailableQty);
+        imgProduct = findViewById(R.id.imageViewProduct);
+        etQuantity = findViewById(R.id.editTextQuantity);
+        etDeliveryLocation = findViewById(R.id.editTextDeliveryLocation);
+        btnPlaceOrder = findViewById(R.id.buttonPayAndOrder);
+        progressBar = findViewById(R.id.progressBar); // assure-toi que progressBar existe ou ajoute-le dans le XML
     }
+
 
     private void setupToolbar() {
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -113,6 +115,20 @@ public class OrderFormActivity extends AppCompatActivity {
 
         apiService.getProductById(productId).enqueue(new Callback<Product>() {
             @Override
+            public void onResponse(Call<Product> call, Response<Product> response) {
+                progressBar.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null) {
+                    product = response.body();
+                    displayProductDetails();
+                } else {
+                    Toast.makeText(OrderFormActivity.this,
+                            "Failed to load product details: " + response.code(),
+                            Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+
+            @Override
             public void onFailure(Call<Product> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
                 Toast.makeText(OrderFormActivity.this,
@@ -122,6 +138,7 @@ public class OrderFormActivity extends AppCompatActivity {
             }
         });
     }
+
     private void displayProductDetails() {
         tvProductName.setText(product.getName());
         tvProductPrice.setText(String.format(Locale.getDefault(), Constants.CURRENCY_FORMAT, product.getPrice()));
