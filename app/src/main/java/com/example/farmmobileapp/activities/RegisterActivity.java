@@ -1,6 +1,5 @@
 package com.example.farmmobileapp.activities;
 
-
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -24,12 +23,10 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.farmmobileapp.R;
-import com.example.farmmobileapp.api.ApiService;
-import com.example.farmmobileapp.api.RetrofitClient;
+import com.example.farmmobileapp.network.ApiService;
+import com.example.farmmobileapp.network.RetrofitClient;
 import com.example.farmmobileapp.models.AuthResponse;
 import com.example.farmmobileapp.models.RegisterRequest;
-import com.example.farmmobileapp.ui.client.MainClientActivity;
-import com.example.farmmobileapp.ui.farmer.MainFarmerActivity;
 import com.example.farmmobileapp.utils.SessionManager;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -64,6 +61,17 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_register);
 
         // Initialize views
+        initViews();
+
+        // Initialize API service and session manager
+        apiService = RetrofitClient.getClient().create(ApiService.class);
+        sessionManager = SessionManager.getInstance(this);
+
+        // Set up click listeners
+        setupClickListeners();
+    }
+
+    private void initViews() {
         etName = findViewById(R.id.etName);
         etUsername = findViewById(R.id.etUsername);
         etEmail = findViewById(R.id.etEmail);
@@ -76,11 +84,9 @@ public class RegisterActivity extends AppCompatActivity {
         tvLogin = findViewById(R.id.tvLogin);
         imgProfile = findViewById(R.id.imgProfile);
         progressBar = findViewById(R.id.progressBar);
+    }
 
-        // Initialize API service and session manager
-        apiService = RetrofitClient.getClient().create(ApiService.class);
-        sessionManager = SessionManager.getInstance(this);
-
+    private void setupClickListeners() {
         // Select image button click listener
         btnSelectImage.setOnClickListener(v -> {
             if (checkPermission()) {
@@ -147,11 +153,6 @@ public class RegisterActivity extends AppCompatActivity {
             return false;
         }
 
-        if (selectedImageUri == null) {
-            Toast.makeText(this, "Please select a profile picture", Toast.LENGTH_SHORT).show();
-            return false;
-        }
-
         return true;
     }
 
@@ -168,12 +169,24 @@ public class RegisterActivity extends AppCompatActivity {
                     sessionManager.saveAuthToken(authResponse.getToken());
                     sessionManager.saveUser(authResponse.getUser());
 
-                    // Upload profile image
-                    uploadProfileImage();
+                    // Upload profile image if selected
+                    if (selectedImageUri != null) {
+                        uploadProfileImage();
+                    } else {
+                        // No image selected, proceed to main activity
+                        progressBar.setVisibility(View.GONE);
+                        navigateBasedOnRole();
+                        finish();
+                    }
                 } else {
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(RegisterActivity.this, "Registration failed. Please try again.",
-                            Toast.LENGTH_SHORT).show();
+                    String errorMessage = "Registration failed";
+                    if (response.code() == 400) {
+                        errorMessage = "Username or email already exists";
+                    } else if (response.code() == 422) {
+                        errorMessage = "Invalid input data";
+                    }
+                    Toast.makeText(RegisterActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -188,12 +201,27 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void uploadProfileImage() {
         String filePath = getRealPathFromURI(selectedImageUri);
+        if (filePath == null) {
+            // Failed to get file path, proceed without image
+            progressBar.setVisibility(View.GONE);
+            navigateBasedOnRole();
+            finish();
+            return;
+        }
+
         File file = new File(filePath);
+        if (!file.exists()) {
+            // File doesn't exist, proceed without image
+            progressBar.setVisibility(View.GONE);
+            navigateBasedOnRole();
+            finish();
+            return;
+        }
 
         RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
-        MultipartBody.Part imagePart = MultipartBody.Part.createFormData("image", file.getName(), requestFile);
+        MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", file.getName(), requestFile);
 
-        apiService.uploadProfileImage(sessionManager.getAuthHeaderValue(), imagePart)
+        apiService.uploadProfileImage(sessionManager.getAuthHeaderValue(), filePart)
                 .enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {
@@ -202,21 +230,25 @@ public class RegisterActivity extends AppCompatActivity {
                         if (response.isSuccessful()) {
                             Toast.makeText(RegisterActivity.this, "Registration successful",
                                     Toast.LENGTH_SHORT).show();
-
-                            // Navigate based on user role
-                            navigateBasedOnRole();
-                            finish();
                         } else {
-                            Toast.makeText(RegisterActivity.this, "Failed to upload profile image",
+                            Toast.makeText(RegisterActivity.this, "Profile image upload failed",
                                     Toast.LENGTH_SHORT).show();
                         }
+
+                        // Navigate regardless of image upload success
+                        navigateBasedOnRole();
+                        finish();
                     }
 
                     @Override
                     public void onFailure(Call<Void> call, Throwable t) {
                         progressBar.setVisibility(View.GONE);
-                        Toast.makeText(RegisterActivity.this, "Network error: " + t.getMessage(),
+                        Toast.makeText(RegisterActivity.this, "Image upload failed: " + t.getMessage(),
                                 Toast.LENGTH_SHORT).show();
+
+                        // Navigate even if image upload fails
+                        navigateBasedOnRole();
+                        finish();
                     }
                 });
     }
