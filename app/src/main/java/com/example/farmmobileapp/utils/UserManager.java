@@ -1,22 +1,14 @@
 package com.example.farmmobileapp.utils;
 
-
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.text.TextUtils;
+import android.content.Intent;
 
+import com.example.farmmobileapp.activities.LoginActivity;
 import com.example.farmmobileapp.models.User;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 public class UserManager {
     private static UserManager instance;
-    private SharedPreferences sharedPreferences;
-    private FirebaseAuth firebaseAuth;
-    private FirebaseFirestore db;
-    private User currentUser;
+    private SessionManager sessionManager;
 
     // Singleton pattern
     public static synchronized UserManager getInstance() {
@@ -27,8 +19,7 @@ public class UserManager {
     }
 
     private UserManager() {
-        firebaseAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        // Private constructor
     }
 
     /**
@@ -37,42 +28,7 @@ public class UserManager {
      * @param context Application context
      */
     public void init(Context context) {
-        sharedPreferences = context.getSharedPreferences(Constants.PREF_NAME, Context.MODE_PRIVATE);
-        loadUserFromPreferences();
-    }
-
-    /**
-     * Load user data from SharedPreferences
-     */
-    private void loadUserFromPreferences() {
-        String userId = sharedPreferences.getString(Constants.PREF_USER_ID, null);
-        if (!TextUtils.isEmpty(userId)) {
-            currentUser = new User();
-            currentUser.setId(userId);
-            currentUser.setName(sharedPreferences.getString(Constants.PREF_USER_NAME, ""));
-            currentUser.setEmail(sharedPreferences.getString(Constants.PREF_USER_EMAIL, ""));
-            currentUser.setUserType(sharedPreferences.getString(Constants.PREF_USER_TYPE, ""));
-            currentUser.setProfileImageUrl(sharedPreferences.getString(Constants.PREF_USER_PROFILE_IMAGE, ""));
-        }
-    }
-
-    /**
-     * Save user data to SharedPreferences
-     *
-     * @param user User data to save
-     */
-    public void saveUserToPreferences(User user) {
-        if (user != null && sharedPreferences != null) {
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString(Constants.PREF_USER_ID, user.getId());
-            editor.putString(Constants.PREF_USER_NAME, user.getName());
-            editor.putString(Constants.PREF_USER_EMAIL, user.getEmail());
-            editor.putString(Constants.PREF_USER_TYPE, user.getUserType());
-            editor.putString(Constants.PREF_USER_PROFILE_IMAGE, user.getProfileImageUrl());
-            editor.apply();
-
-            currentUser = user;
-        }
+        sessionManager = SessionManager.getInstance(context);
     }
 
     /**
@@ -81,7 +37,10 @@ public class UserManager {
      * @return Current user data
      */
     public User getCurrentUser() {
-        return currentUser;
+        if (sessionManager != null) {
+            return sessionManager.getUser();
+        }
+        return null;
     }
 
     /**
@@ -90,7 +49,7 @@ public class UserManager {
      * @return True if user is logged in, false otherwise
      */
     public boolean isLoggedIn() {
-        return currentUser != null && !TextUtils.isEmpty(currentUser.getId());
+        return sessionManager != null && sessionManager.isLoggedIn();
     }
 
     /**
@@ -99,7 +58,8 @@ public class UserManager {
      * @return True if user is a farmer, false otherwise
      */
     public boolean isFarmer() {
-        return isLoggedIn() && Constants.USER_TYPE_FARMER.equals(currentUser.getUserType());
+        User user = getCurrentUser();
+        return user != null && "FARMER".equals(user.getRole());
     }
 
     /**
@@ -108,172 +68,83 @@ public class UserManager {
      * @return True if user is a client, false otherwise
      */
     public boolean isClient() {
-        return isLoggedIn() && Constants.USER_TYPE_CLIENT.equals(currentUser.getUserType());
+        User user = getCurrentUser();
+        return user != null && "CLIENT".equals(user.getRole());
     }
 
     /**
-     * Fetch user data from Firestore
+     * Check if user is an admin
      *
-     * @param userId User ID to fetch
-     * @param callback Callback for fetch result
+     * @return True if user is an admin, false otherwise
      */
-    public void fetchUserData(String userId, final UserCallback callback) {
-        if (TextUtils.isEmpty(userId)) {
-            if (callback != null) {
-                callback.onFailure("User ID is empty");
-            }
-            return;
+    public boolean isAdmin() {
+        User user = getCurrentUser();
+        return user != null && "ADMIN".equals(user.getRole());
+    }
+
+    /**
+     * Logout current user and redirect to login
+     *
+     * @param context Current context
+     */
+    public void logout(Context context) {
+        if (sessionManager != null) {
+            sessionManager.logout();
         }
 
-        db.collection(Constants.COLLECTION_USERS)
-                .document(userId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        User user = documentSnapshot.toObject(User.class);
-                        if (user != null) {
-                            user.setId(documentSnapshot.getId());
-                            saveUserToPreferences(user);
-                            if (callback != null) {
-                                callback.onSuccess(user);
-                            }
-                        } else {
-                            if (callback != null) {
-                                callback.onFailure("Failed to parse user data");
-                            }
-                        }
-                    } else {
-                        if (callback != null) {
-                            callback.onFailure("User not found");
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (callback != null) {
-                        callback.onFailure(e.getMessage());
-                    }
-                });
+        // Redirect to login activity
+        Intent intent = new Intent(context, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        context.startActivity(intent);
     }
 
     /**
-     * Logout current user
+     * Simple logout without redirect
      */
     public void logout() {
-        firebaseAuth.signOut();
-
-        // Clear SharedPreferences
-        if (sharedPreferences != null) {
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.clear();
-            editor.apply();
+        if (sessionManager != null) {
+            sessionManager.logout();
         }
-
-        currentUser = null;
     }
 
     /**
-     * Update user profile
+     * Save user to session
      *
-     * @param name New name
-     * @param profileImageUrl New profile image URL
-     * @param callback Callback for update result
+     * @param user User to save
      */
-    public void updateUserProfile(String name, String profileImageUrl, final UserCallback callback) {
-        if (!isLoggedIn()) {
-            if (callback != null) {
-                callback.onFailure("User not logged in");
-            }
-            return;
+    public void saveUser(User user) {
+        if (sessionManager != null) {
+            sessionManager.saveUser(user);
         }
-
-        // Create update data
-        User updatedUser = new User();
-        updatedUser.setId(currentUser.getId());
-        updatedUser.setName(name);
-        updatedUser.setEmail(currentUser.getEmail());
-        updatedUser.setUserType(currentUser.getUserType());
-        updatedUser.setProfileImageUrl(profileImageUrl);
-
-        // Update in Firestore
-        db.collection(Constants.COLLECTION_USERS)
-                .document(currentUser.getId())
-                .update(
-                        "name", name,
-                        "profileImageUrl", profileImageUrl
-                )
-                .addOnSuccessListener(aVoid -> {
-                    saveUserToPreferences(updatedUser);
-                    if (callback != null) {
-                        callback.onSuccess(updatedUser);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (callback != null) {
-                        callback.onFailure(e.getMessage());
-                    }
-                });
     }
 
     /**
-     * Callback for user operations
+     * Get user's role
+     *
+     * @return User role or null if not logged in
      */
-    public interface UserCallback {
-        void onSuccess(User user);
-        void onFailure(String errorMessage);
+    public String getUserRole() {
+        User user = getCurrentUser();
+        return user != null ? user.getRole() : null;
     }
 
     /**
-     * User model for app usage
+     * Get user's ID
+     *
+     * @return User ID or null if not logged in
      */
-    public static class User {
-        private String id;
-        private String name;
-        private String email;
-        private String userType;
-        private String profileImageUrl;
+    public Long getUserId() {
+        User user = getCurrentUser();
+        return user != null ? user.getId() : null;
+    }
 
-        public User() {
-            // Empty constructor needed for Firestore
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public void setId(String id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-
-        public String getUserType() {
-            return userType;
-        }
-
-        public void setUserType(String userType) {
-            this.userType = userType;
-        }
-
-        public String getProfileImageUrl() {
-            return profileImageUrl;
-        }
-
-        public void setProfileImageUrl(String profileImageUrl) {
-            this.profileImageUrl = profileImageUrl;
-        }
+    /**
+     * Get user's name
+     *
+     * @return User name or null if not logged in
+     */
+    public String getUserName() {
+        User user = getCurrentUser();
+        return user != null ? user.getName() : null;
     }
 }
