@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.client.MainClientActivity">
+    tools:context="com.example.farmmobileapp.activities.MainClientActivity">
+<!--    tools:context=".ui.client.MainClientActivity">-->
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
@@ -28,7 +29,7 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_gravity="end"
-            android:src="@drawable/ic_profile_placeholder"
+            android:src="@drawable/profile_placeholder"
             android:layout_marginEnd="16dp" />
 
     </androidx.appcompat.widget.Toolbar>
