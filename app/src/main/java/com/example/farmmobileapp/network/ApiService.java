@@ -1,6 +1,5 @@
 package com.example.farmmobileapp.network;
 
-
 import com.example.farmmobileapp.models.AuthRequest;
 import com.example.farmmobileapp.models.AuthResponse;
 import com.example.farmmobileapp.models.Order;
@@ -25,64 +24,79 @@ import retrofit2.http.Query;
 
 public interface ApiService {
     // Authentication endpoints
-    @POST("/api/auth/login")
+    @POST("api/auth/login")
     Call<AuthResponse> login(@Body AuthRequest request);
 
-    @POST("/api/auth/register")
+    @POST("api/auth/register")
     Call<AuthResponse> register(@Body RegisterRequest request);
 
     // User endpoints
-    @GET("/api/users/me")
+    @GET("api/users/me")
     Call<User> getCurrentUser(@Header("Authorization") String token);
 
     @Multipart
-    @POST("/api/users/profile-image")
+    @POST("api/users/profile-image")
     Call<Void> uploadProfileImage(@Header("Authorization") String token,
-                                  @Part MultipartBody.Part image);
+                                  @Part MultipartBody.Part file);
+
+    @GET("api/users")
+    Call<List<User>> getAllUsers(@Header("Authorization") String token);
+
+    @GET("api/users/{id}")
+    Call<User> getUserById(@Header("Authorization") String token, @Path("id") Long id);
+
+    @GET("api/users/role/{role}")
+    Call<List<User>> getUsersByRole(@Header("Authorization") String token, @Path("role") String role);
+
+    @DELETE("api/users/{id}")
+    Call<Void> deleteUser(@Header("Authorization") String token, @Path("id") Long id);
 
     // Product endpoints
-    @GET("/api/products")
-    Call<List<Product>> getAllProducts(@Header("Authorization") String token);
+    @GET("api/products")
+    Call<List<Product>> getAllProducts();
 
-    @GET("/api/products/search")
-    Call<List<Product>> searchProducts(@Header("Authorization") String token,
-                                       @Query("query") String query);
+    @GET("api/products/{id}")
+    Call<Product> getProductById(@Path("id") Long id);
 
-    @GET("/api/products/farmer/{farmerId}")
-    Call<List<Product>> getFarmerProducts(@Header("Authorization") String token,
-                                          @Path("farmerId") String farmerId);
+    @GET("api/products/search")
+    Call<List<Product>> searchProductsByName(@Query("name") String name);
 
-    @POST("/api/products")
-    Call<Product> createProduct(@Header("Authorization") String token,
-                                @Body Product product);
+    @GET("api/products/search")
+    Call<List<Product>> searchProductsByPrice(@Query("minPrice") Double minPrice,
+                                              @Query("maxPrice") Double maxPrice);
 
-    @PUT("/api/products/{id}")
+    @GET("api/products/farmer/{farmerId}")
+    Call<List<Product>> getProductsByFarmerId(@Path("farmerId") Long farmerId);
+
+    @POST("api/products")
+    Call<Product> createProduct(@Header("Authorization") String token, @Body Product product);
+
+    @PUT("api/products/{id}")
     Call<Product> updateProduct(@Header("Authorization") String token,
-                                @Path("id") String id,
+                                @Path("id") Long id,
                                 @Body Product product);
-
-    @DELETE("/api/products/{id}")
-    Call<Void> deleteProduct(@Header("Authorization") String token,
-                             @Path("id") String id);
 
     @Multipart
-    @POST("/api/products/{id}/image")
+    @POST("api/products/{id}/image")
     Call<Void> uploadProductImage(@Header("Authorization") String token,
-                                  @Path("id") String id,
-                                  @Part MultipartBody.Part image);
+                                  @Path("id") Long id,
+                                  @Part MultipartBody.Part file);
 
-    // Orders endpoints (will need to be implemented on the backend)
-    @POST("/api/orders")
+    @DELETE("api/products/{id}")
+    Call<Void> deleteProduct(@Header("Authorization") String token, @Path("id") Long id);
+
+    // Order endpoints (if you plan to implement them later)
+    @POST("api/orders")
     Call<Order> createOrder(@Header("Authorization") String token, @Body Order order);
 
-    @GET("/api/orders")
+    @GET("api/orders")
     Call<List<Order>> getUserOrders(@Header("Authorization") String token);
 
-    @GET("/api/orders/farmer")
+    @GET("api/orders/farmer")
     Call<List<Order>> getFarmerOrders(@Header("Authorization") String token);
 
-    @PUT("/api/orders/{id}/status")
+    @PUT("api/orders/{id}/status")
     Call<Order> updateOrderStatus(@Header("Authorization") String token,
-                                  @Path("id") String id,
+                                  @Path("id") Long id,
                                   @Body Order order);
 }
