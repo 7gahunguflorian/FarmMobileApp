@@ -1,6 +1,5 @@
 package com.example.farmmobileapp.activities;
 
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -12,12 +11,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.farmmobileapp.R;
-import com.example.farmmobileapp.api.ApiService;
-import com.example.farmmobileapp.api.RetrofitClient;
+import com.example.farmmobileapp.network.ApiService;
+import com.example.farmmobileapp.network.RetrofitClient;
 import com.example.farmmobileapp.models.AuthRequest;
 import com.example.farmmobileapp.models.AuthResponse;
-import com.example.farmmobileapp.ui.client.MainClientActivity;
-import com.example.farmmobileapp.ui.farmer.MainFarmerActivity;
 import com.example.farmmobileapp.utils.SessionManager;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -40,11 +37,7 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         // Initialize views
-        etUsername = findViewById(R.id.etUsername);
-        etPassword = findViewById(R.id.etPassword);
-        btnLogin = findViewById(R.id.btnLogin);
-        tvRegister = findViewById(R.id.tvRegister);
-        progressBar = findViewById(R.id.progressBar);
+        initViews();
 
         // Initialize API service and session manager
         apiService = RetrofitClient.getClient().create(ApiService.class);
@@ -57,6 +50,19 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        // Set up click listeners
+        setupClickListeners();
+    }
+
+    private void initViews() {
+        etUsername = findViewById(R.id.etUsername);
+        etPassword = findViewById(R.id.etPassword);
+        btnLogin = findViewById(R.id.btnLogin);
+        tvRegister = findViewById(R.id.tvRegister);
+        progressBar = findViewById(R.id.progressBar);
+    }
+
+    private void setupClickListeners() {
         // Login button click listener
         btnLogin.setOnClickListener(v -> {
             String username = etUsername.getText().toString().trim();
@@ -64,6 +70,7 @@ public class LoginActivity extends AppCompatActivity {
 
             if (validateInputs(username, password)) {
                 progressBar.setVisibility(View.VISIBLE);
+                btnLogin.setEnabled(false);
                 loginUser(username, password);
             }
         });
@@ -97,6 +104,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 progressBar.setVisibility(View.GONE);
+                btnLogin.setEnabled(true);
 
                 if (response.isSuccessful() && response.body() != null) {
                     AuthResponse authResponse = response.body();
@@ -105,20 +113,38 @@ public class LoginActivity extends AppCompatActivity {
                     sessionManager.saveAuthToken(authResponse.getToken());
                     sessionManager.saveUser(authResponse.getUser());
 
+                    Toast.makeText(LoginActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
+
                     // Navigate based on user role
                     navigateBasedOnRole();
                     finish();
                 } else {
-                    Toast.makeText(LoginActivity.this, "Login failed. Please check your credentials.",
-                            Toast.LENGTH_SHORT).show();
+                    String errorMessage = "Login failed";
+                    if (response.code() == 401) {
+                        errorMessage = "Invalid username or password";
+                    } else if (response.code() == 400) {
+                        errorMessage = "Please check your credentials";
+                    } else if (response.code() >= 500) {
+                        errorMessage = "Server error. Please try again later";
+                    }
+                    Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
-                Toast.makeText(LoginActivity.this, "Network error: " + t.getMessage(),
-                        Toast.LENGTH_SHORT).show();
+                btnLogin.setEnabled(true);
+
+                String errorMessage = "Network error";
+                if (t.getMessage() != null) {
+                    if (t.getMessage().contains("Failed to connect")) {
+                        errorMessage = "Cannot connect to server. Please check your internet connection.";
+                    } else {
+                        errorMessage = "Network error: " + t.getMessage();
+                    }
+                }
+                Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -131,7 +157,13 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(new Intent(LoginActivity.this, MainFarmerActivity.class));
             } else if ("CLIENT".equals(role)) {
                 startActivity(new Intent(LoginActivity.this, MainClientActivity.class));
+            } else {
+                Toast.makeText(this, "Unknown user role", Toast.LENGTH_SHORT).show();
+                sessionManager.logout();
             }
+        } else {
+            Toast.makeText(this, "User data not found", Toast.LENGTH_SHORT).show();
+            sessionManager.logout();
         }
     }
 }
