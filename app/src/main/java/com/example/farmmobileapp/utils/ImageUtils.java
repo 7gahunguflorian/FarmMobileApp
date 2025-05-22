@@ -1,6 +1,5 @@
 package com.example.farmmobileapp.utils;
 
-
 import android.content.Context;
 import android.widget.ImageView;
 
@@ -8,16 +7,13 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.farmmobileapp.R;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
+import com.example.farmmobileapp.network.RetrofitClient;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.UUID;
 
 import androidx.annotation.NonNull;
 
@@ -36,8 +32,14 @@ public class ImageUtils {
                 .error(R.drawable.error_image)
                 .diskCacheStrategy(DiskCacheStrategy.ALL);
 
+        // Handle relative URLs from backend
+        String fullImageUrl = imageUrl;
+        if (imageUrl != null && !imageUrl.startsWith("http")) {
+            fullImageUrl = RetrofitClient.BASE_URL + "images/" + imageUrl;
+        }
+
         Glide.with(context)
-                .load(imageUrl)
+                .load(fullImageUrl)
                 .apply(requestOptions)
                 .into(imageView);
     }
@@ -56,52 +58,16 @@ public class ImageUtils {
                 .circleCrop()
                 .diskCacheStrategy(DiskCacheStrategy.ALL);
 
+        // Handle relative URLs from backend
+        String fullImageUrl = imageUrl;
+        if (imageUrl != null && !imageUrl.startsWith("http")) {
+            fullImageUrl = RetrofitClient.BASE_URL + "images/" + imageUrl;
+        }
+
         Glide.with(context)
-                .load(imageUrl)
+                .load(fullImageUrl)
                 .apply(requestOptions)
                 .into(imageView);
-    }
-
-    /**
-     * Upload image to Firebase Storage
-     *
-     * @param filePath Path to the image file
-     * @param storagePath Firebase Storage path to upload to
-     * @param callback Callback for upload result
-     */
-    public static void uploadImage(String filePath, String storagePath, final UploadCallback callback) {
-        if (filePath == null || filePath.isEmpty()) {
-            if (callback != null) {
-                callback.onFailure("File path is empty");
-            }
-            return;
-        }
-
-        File file = new File(filePath);
-        if (!file.exists()) {
-            if (callback != null) {
-                callback.onFailure("File does not exist");
-            }
-            return;
-        }
-
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
-        String fileName = UUID.randomUUID().toString() + "_" + file.getName();
-        StorageReference imageRef = storageRef.child(storagePath + "/" + fileName);
-
-        UploadTask uploadTask = imageRef.putFile(android.net.Uri.fromFile(file));
-        uploadTask.addOnSuccessListener(taskSnapshot -> {
-            imageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                String downloadUrl = uri.toString();
-                if (callback != null) {
-                    callback.onSuccess(downloadUrl);
-                }
-            });
-        }).addOnFailureListener(e -> {
-            if (callback != null) {
-                callback.onFailure(e.getMessage());
-            }
-        });
     }
 
     /**
@@ -126,10 +92,20 @@ public class ImageUtils {
     }
 
     /**
-     * Callback for image upload
+     * Get the full image URL for display
+     *
+     * @param imageUrl The relative or absolute image URL
+     * @return Full URL for image display
      */
-    public interface UploadCallback {
-        void onSuccess(String imageUrl);
-        void onFailure(String errorMessage);
+    public static String getFullImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return null;
+        }
+
+        if (imageUrl.startsWith("http")) {
+            return imageUrl;
+        }
+
+        return RetrofitClient.BASE_URL + "images/" + imageUrl;
     }
 }
