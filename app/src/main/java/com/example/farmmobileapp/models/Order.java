@@ -1,35 +1,49 @@
 package com.example.farmmobileapp.models;
+
 import java.util.Date;
 
 public class Order {
-    private String id;
-    private String productId;
+    private Long id;
+    private Long productId;
     private String productName;
     private String productImageUrl;
     private int quantity;
     private double totalPrice;
     private String deliveryLocation;
-    private String clientId;
+    private Long clientId;
     private String clientName;
-    private String farmerId;
+    private Long farmerId;
     private String farmerName;
     private String status; // "PENDING", "DELIVERED", "CANCELLED"
     private Date createdAt;
 
+    // Default constructor
+    public Order() {}
+
+    // Constructor
+    public Order(Long productId, int quantity, double totalPrice, String deliveryLocation) {
+        this.productId = productId;
+        this.quantity = quantity;
+        this.totalPrice = totalPrice;
+        this.deliveryLocation = deliveryLocation;
+        this.status = "PENDING";
+        this.createdAt = new Date();
+    }
+
     // Getters and setters
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public String getProductId() {
+    public Long getProductId() {
         return productId;
     }
 
-    public void setProductId(String productId) {
+    public void setProductId(Long productId) {
         this.productId = productId;
     }
 
@@ -73,11 +87,11 @@ public class Order {
         this.deliveryLocation = deliveryLocation;
     }
 
-    public String getClientId() {
+    public Long getClientId() {
         return clientId;
     }
 
-    public void setClientId(String clientId) {
+    public void setClientId(Long clientId) {
         this.clientId = clientId;
     }
 
@@ -89,11 +103,11 @@ public class Order {
         this.clientName = clientName;
     }
 
-    public String getFarmerId() {
+    public Long getFarmerId() {
         return farmerId;
     }
 
-    public void setFarmerId(String farmerId) {
+    public void setFarmerId(Long farmerId) {
         this.farmerId = farmerId;
     }
 
@@ -123,6 +137,7 @@ public class Order {
 
     public boolean isRecentOrder() {
         // Check if the order was created within the last 5 minutes
+        if (createdAt == null) return false;
         return (System.currentTimeMillis() - createdAt.getTime()) < 300000; // 5 minutes in milliseconds
     }
 }
