@@ -1,21 +1,32 @@
 package com.example.farmmobileapp.models;
 
 public class Product {
-    private String id;
+    private Long id;
     private String name;
     private double price;
-    private int quantity;
+    private int availableQuantity;
     private String description;
     private String imageUrl;
-    private String farmerId;
+    private Long farmerId;
     private String farmerName;
 
+    // Default constructor
+    public Product() {}
+
+    // Constructor
+    public Product(String name, double price, String description, int availableQuantity) {
+        this.name = name;
+        this.price = price;
+        this.description = description;
+        this.availableQuantity = availableQuantity;
+    }
+
     // Getters and setters
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -35,12 +46,21 @@ public class Product {
         this.price = price;
     }
 
+    public int getAvailableQuantity() {
+        return availableQuantity;
+    }
+
+    public void setAvailableQuantity(int availableQuantity) {
+        this.availableQuantity = availableQuantity;
+    }
+
+    // Keep this for backward compatibility
     public int getQuantity() {
-        return quantity;
+        return availableQuantity;
     }
 
     public void setQuantity(int quantity) {
-        this.quantity = quantity;
+        this.availableQuantity = quantity;
     }
 
     public String getDescription() {
@@ -59,11 +79,11 @@ public class Product {
         this.imageUrl = imageUrl;
     }
 
-    public String getFarmerId() {
+    public Long getFarmerId() {
         return farmerId;
     }
 
-    public void setFarmerId(String farmerId) {
+    public void setFarmerId(Long farmerId) {
         this.farmerId = farmerId;
     }
 
