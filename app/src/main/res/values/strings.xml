@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">AgriConnect</string>
+    <string name="search_products">Rechercher des produits...</string>
+    <string name="no_products_available">Aucun produit disponible</string>
+    <string name="product_image">Image du produit</string>
+    <string name="place_order">Commander</string>
+
 </resources>
