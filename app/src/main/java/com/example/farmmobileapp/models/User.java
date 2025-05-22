@@ -1,19 +1,30 @@
 package com.example.farmmobileapp.models;
 
 public class User {
-    private String id;
+    private Long id;
     private String name;
     private String username;
     private String email;
     private String role;
     private String profileImageUrl;
 
+    // Default constructor
+    public User() {}
+
+    // Constructor
+    public User(String name, String username, String email, String role) {
+        this.name = name;
+        this.username = username;
+        this.email = email;
+        this.role = role;
+    }
+
     // Getters and setters
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -63,5 +74,9 @@ public class User {
 
     public boolean isClient() {
         return "CLIENT".equals(role);
+    }
+
+    public boolean isAdmin() {
+        return "ADMIN".equals(role);
     }
 }
