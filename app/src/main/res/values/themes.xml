@@ -2,8 +2,21 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.FarmMobileApp" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/green_primary</item>
+        <item name="colorPrimaryVariant">@color/green_dark</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">@color/orange_accent</item>
+        <item name="colorSecondaryVariant">@color/orange_dark</item>
+        <item name="colorOnSecondary">@android:color/white</item>
     </style>
 
     <style name="Theme.FarmMobileApp" parent="Base.Theme.FarmMobileApp" />
+
+    <!-- Splash theme -->
+    <style name="Theme.FarmMobileApp.Splash" parent="Theme.FarmMobileApp">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
 </resources>
