@@ -27,4 +27,13 @@
     <color name="status_warning">#FF9800</color>
     <color name="status_error">#F44336</color>
     <color name="status_info">#2196F3</color>
+
+    <!-- Dark theme background and surface colors -->
+    <color name="background_dark">#121212</color> <!-- Fond général sombre -->
+    <color name="surface_dark">#1E1E1E</color>     <!-- Fond des éléments type cartes -->
+
+    <color name="colorPrimary">@color/green_primary</color>
+    <color name="gradient_start">#4CAF50</color>
+    <color name="gradient_end">#81C784</color>
+
 </resources>
