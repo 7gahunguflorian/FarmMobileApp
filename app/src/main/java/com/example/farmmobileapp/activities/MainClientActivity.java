@@ -1,6 +1,5 @@
 package com.example.farmmobileapp.activities;
 
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -18,22 +17,22 @@ import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.example.farmmobileapp.OrderFormActivity;
+import com.example.farmmobileapp.activities.OrderFormActivity;
 import com.example.farmmobileapp.R;
 import com.example.farmmobileapp.adapters.ProductAdapter;
+import com.example.farmmobileapp.network.ApiService;
+import com.example.farmmobileapp.network.RetrofitClient;
 import com.example.farmmobileapp.models.Product;
 import com.example.farmmobileapp.utils.Constants;
-import com.example.farmmobileapp.utils.UserManager;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
+import com.example.farmmobileapp.utils.SessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainClientActivity extends AppCompatActivity {
 
@@ -46,17 +45,18 @@ public class MainClientActivity extends AppCompatActivity {
 
     private ProductAdapter productAdapter;
     private List<Product> productList;
-    private FirebaseFirestore db;
-    private UserManager userManager;
+    private List<Product> filteredProductList;
+    private ApiService apiService;
+    private SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_client);
 
-        // Initialize Firebase
-        db = FirebaseFirestore.getInstance();
-        userManager = UserManager.getInstance();
+        // Initialize API service and session manager
+        apiService = RetrofitClient.getClient().create(ApiService.class);
+        sessionManager = SessionManager.getInstance(this);
 
         // Initialize views
         initViews();
@@ -94,8 +94,6 @@ public class MainClientActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // Open profile or orders activity
-                // Intent intent = new Intent(MainClientActivity.this, ProfileActivity.class);
-                // startActivity(intent);
                 Toast.makeText(MainClientActivity.this, "Profile clicked", Toast.LENGTH_SHORT).show();
             }
         });
@@ -103,13 +101,14 @@ public class MainClientActivity extends AppCompatActivity {
 
     private void setupProductGrid() {
         productList = new ArrayList<>();
-        productAdapter = new ProductAdapter(this, productList);
+        filteredProductList = new ArrayList<>();
+        productAdapter = new ProductAdapter(this, filteredProductList);
         gridProducts.setAdapter(productAdapter);
 
         gridProducts.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Product selectedProduct = productList.get(position);
+                Product selectedProduct = filteredProductList.get(position);
                 openOrderForm(selectedProduct);
             }
         });
@@ -143,58 +142,72 @@ public class MainClientActivity extends AppCompatActivity {
     private void loadProducts() {
         showLoading(true);
 
-        db.collection(Constants.COLLECTION_PRODUCTS)
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            productList.clear();
-                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                Product product = document.toObject(Product.class);
-                                product.setId(document.getId());
-                                productList.add(product);
-                            }
+        apiService.getAllProducts().enqueue(new Callback<List<Product>>() {
+            @Override
+            public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
+                showLoading(false);
+                swipeRefreshLayout.setRefreshing(false);
 
-                            productAdapter.notifyDataSetChanged();
+                if (response.isSuccessful() && response.body() != null) {
+                    productList.clear();
+                    productList.addAll(response.body());
 
-                            if (productList.isEmpty()) {
-                                showEmptyView(true);
-                            } else {
-                                showEmptyView(false);
-                            }
-                        } else {
-                            Toast.makeText(MainClientActivity.this, "Error loading products: " + task.getException().getMessage(),
-                                    Toast.LENGTH_SHORT).show();
-                        }
+                    filteredProductList.clear();
+                    filteredProductList.addAll(productList);
 
-                        showLoading(false);
-                        swipeRefreshLayout.setRefreshing(false);
+                    productAdapter.notifyDataSetChanged();
+
+                    if (filteredProductList.isEmpty()) {
+                        showEmptyView(true);
+                    } else {
+                        showEmptyView(false);
                     }
-                });
+                } else {
+                    Toast.makeText(MainClientActivity.this,
+                            "Error loading products: " + response.code(),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Product>> call, Throwable t) {
+                showLoading(false);
+                swipeRefreshLayout.setRefreshing(false);
+                Toast.makeText(MainClientActivity.this,
+                        "Network error: " + t.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void filterProducts(String query) {
+        filteredProductList.clear();
+
         if (query.isEmpty()) {
-            productAdapter = new ProductAdapter(this, productList);
+            filteredProductList.addAll(productList);
         } else {
-            List<Product> filteredList = new ArrayList<>();
             for (Product product : productList) {
                 if (product.getName().toLowerCase().contains(query.toLowerCase()) ||
                         product.getDescription().toLowerCase().contains(query.toLowerCase()) ||
-                        product.getFarmerName().toLowerCase().contains(query.toLowerCase())) {
-                    filteredList.add(product);
+                        (product.getFarmerName() != null &&
+                                product.getFarmerName().toLowerCase().contains(query.toLowerCase()))) {
+                    filteredProductList.add(product);
                 }
             }
-            productAdapter = new ProductAdapter(this, filteredList);
         }
 
-        gridProducts.setAdapter(productAdapter);
+        productAdapter.notifyDataSetChanged();
+
+        if (filteredProductList.isEmpty()) {
+            showEmptyView(true);
+        } else {
+            showEmptyView(false);
+        }
     }
 
     private void openOrderForm(Product product) {
         Intent intent = new Intent(MainClientActivity.this, OrderFormActivity.class);
-        intent.putExtra(Constants.EXTRA_PRODUCT_ID, product.getId());
+        intent.putExtra(Constants.EXTRA_PRODUCT_ID, product.getId().toString());
         startActivity(intent);
     }
 
@@ -220,13 +233,14 @@ public class MainClientActivity extends AppCompatActivity {
 
         if (id == R.id.action_my_orders) {
             // Open orders activity
-            // Intent intent = new Intent(MainClientActivity.this, ClientOrdersActivity.class);
-            // startActivity(intent);
             Toast.makeText(this, "My Orders clicked", Toast.LENGTH_SHORT).show();
             return true;
         } else if (id == R.id.action_logout) {
             // Log out
-            userManager.logout();
+            sessionManager.logout();
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
             finish();
             return true;
         }
