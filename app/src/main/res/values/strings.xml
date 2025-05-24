@@ -4,5 +4,6 @@
     <string name="no_products_available">Aucun produit disponible</string>
     <string name="product_image">Image du produit</string>
     <string name="place_order">Commander</string>
-
+    <string name="btn_action_default">Action</string>
+    <string name="btn_action_default_desc">Action button</string>
 </resources>
