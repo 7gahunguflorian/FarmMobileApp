@@ -10,6 +10,7 @@ import com.example.farmmobileapp.models.RegisterRequest;
 import java.util.List;
 
 import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
@@ -29,6 +30,17 @@ public interface ApiService {
 
     @POST("api/auth/register")
     Call<AuthResponse> register(@Body RegisterRequest request);
+
+    // New endpoint for registration with profile image
+    @Multipart
+    @POST("api/auth/register")
+    Call<AuthResponse> registerWithImage(
+            @Part("name") RequestBody name,
+            @Part("username") RequestBody username,
+            @Part("email") RequestBody email,
+            @Part("password") RequestBody password,
+            @Part("role") RequestBody role,
+            @Part MultipartBody.Part file);
 
     // User endpoints
     @GET("api/users/me")
@@ -68,6 +80,10 @@ public interface ApiService {
     @GET("api/products/farmer/{farmerId}")
     Call<List<Product>> getProductsByFarmerId(@Path("farmerId") Long farmerId);
 
+    // Add this missing method for getting current farmer's products
+    @GET("api/products/my-products")
+    Call<List<Product>> getFarmerProducts(@Header("Authorization") String token);
+
     @POST("api/products")
     Call<Product> createProduct(@Header("Authorization") String token, @Body Product product);
 
@@ -85,7 +101,7 @@ public interface ApiService {
     @DELETE("api/products/{id}")
     Call<Void> deleteProduct(@Header("Authorization") String token, @Path("id") Long id);
 
-    // Order endpoints (if you plan to implement them later)
+    // Order endpoints
     @POST("api/orders")
     Call<Order> createOrder(@Header("Authorization") String token, @Body Order order);
 
