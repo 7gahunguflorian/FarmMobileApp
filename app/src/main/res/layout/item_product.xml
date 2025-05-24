@@ -74,18 +74,41 @@
                     android:textColor="@color/white" />
             </LinearLayout>
 
-            <Button
-                android:id="@+id/btnPlaceOrder"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="@string/place_order"
-                android:textSize="12sp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:layout_marginTop="4dp"
-                android:textAllCaps="false"
-                android:textColor="@color/white"
-                android:background="@drawable/bg_button"
-                style="?android:attr/borderlessButtonStyle" />
-        </LinearLayout>
+                android:weightSum="2">
 
+                <Button
+                    android:id="@+id/btnAction1"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="@string/btn_action_default"
+                    android:textSize="12sp"
+                    android:layout_marginEnd="4dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:contentDescription="@string/btn_action_default_desc"
+                    android:background="@drawable/bg_button"
+                    style="?android:attr/borderlessButtonStyle" />
+
+                <Button
+                    android:id="@+id/btnAction2"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="@string/btn_action_default"
+                    android:textSize="12sp"
+                    android:layout_marginStart="4dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:contentDescription="@string/btn_action_default_desc"
+                    android:background="@drawable/bg_button"
+                    style="?android:attr/borderlessButtonStyle" />
+            </LinearLayout>
+        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
