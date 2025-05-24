@@ -26,4 +26,5 @@
     <dimen name="profile_image_size">120dp</dimen>
     <dimen name="icon_size">24dp</dimen>
     <dimen name="icon_padding">12dp</dimen>
+    <dimen name="grid_spacing">8dp</dimen>
 </resources>
