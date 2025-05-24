@@ -5,8 +5,6 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.GridView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,11 +13,13 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.example.farmmobileapp.activities.OrderFormActivity;
 import com.example.farmmobileapp.R;
 import com.example.farmmobileapp.adapters.ProductAdapter;
+import com.example.farmmobileapp.decorations.GridSpacingItemDecoration;
 import com.example.farmmobileapp.network.ApiService;
 import com.example.farmmobileapp.network.RetrofitClient;
 import com.example.farmmobileapp.models.Product;
@@ -34,9 +34,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainClientActivity extends AppCompatActivity {
+public class MainClientActivity extends AppCompatActivity implements ProductAdapter.OnProductActionListener {
 
-    private GridView gridProducts;
+    private RecyclerView recyclerProducts;
     private ProgressBar progressBar;
     private TextView tvEmptyView;
     private SwipeRefreshLayout swipeRefreshLayout;
@@ -82,7 +82,7 @@ public class MainClientActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        gridProducts = findViewById(R.id.gridProducts);
+        recyclerProducts = findViewById(R.id.gridProducts); // Keep same ID in layout file
         progressBar = findViewById(R.id.progressBar);
         tvEmptyView = findViewById(R.id.tvEmptyView);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
@@ -90,28 +90,27 @@ public class MainClientActivity extends AppCompatActivity {
         imgProfile = findViewById(R.id.imgProfile);
 
         // Set up profile image click
-        imgProfile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Open profile or orders activity
-                Toast.makeText(MainClientActivity.this, "Profile clicked", Toast.LENGTH_SHORT).show();
-            }
+        imgProfile.setOnClickListener(v -> {
+            // Open profile or orders activity
+            Toast.makeText(MainClientActivity.this, "Profile clicked", Toast.LENGTH_SHORT).show();
         });
     }
 
     private void setupProductGrid() {
         productList = new ArrayList<>();
         filteredProductList = new ArrayList<>();
-        productAdapter = new ProductAdapter(this, filteredProductList);
-        gridProducts.setAdapter(productAdapter);
 
-        gridProducts.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Product selectedProduct = filteredProductList.get(position);
-                openOrderForm(selectedProduct);
-            }
-        });
+        productAdapter = new ProductAdapter(this, filteredProductList);
+        productAdapter.setOnProductActionListener(this);
+
+        // Set GridLayoutManager with 2 columns and spacing
+        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
+        recyclerProducts.setLayoutManager(layoutManager);
+
+        // Add item decoration for spacing
+        int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
+        recyclerProducts.addItemDecoration(new GridSpacingItemDecoration(2, spacingInPixels, true));
+        recyclerProducts.setAdapter(productAdapter);
     }
 
     private void setupSearch() {
@@ -131,12 +130,7 @@ public class MainClientActivity extends AppCompatActivity {
     }
 
     private void setupSwipeRefresh() {
-        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                loadProducts();
-            }
-        });
+        swipeRefreshLayout.setOnRefreshListener(() -> loadProducts());
     }
 
     private void loadProducts() {
@@ -213,12 +207,28 @@ public class MainClientActivity extends AppCompatActivity {
 
     private void showLoading(boolean show) {
         progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
-        gridProducts.setVisibility(show ? View.GONE : View.VISIBLE);
+        recyclerProducts.setVisibility(show ? View.GONE : View.VISIBLE);
     }
 
     private void showEmptyView(boolean show) {
         tvEmptyView.setVisibility(show ? View.VISIBLE : View.GONE);
-        gridProducts.setVisibility(show ? View.GONE : View.VISIBLE);
+        recyclerProducts.setVisibility(show ? View.GONE : View.VISIBLE);
+    }
+
+    // Implement ProductAdapter.OnProductActionListener methods
+    @Override
+    public void onEditProduct(Product product) {
+        // Not used in client view
+    }
+
+    @Override
+    public void onDeleteProduct(Product product) {
+        // Not used in client view
+    }
+
+    @Override
+    public void onOrderProduct(Product product) {
+        openOrderForm(product);
     }
 
     @Override
@@ -228,7 +238,7 @@ public class MainClientActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
 
         if (id == R.id.action_my_orders) {
