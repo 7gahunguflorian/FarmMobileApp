@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.example.farmmobileapp.activities.MainClientActivity">
-<!--    tools:context=".ui.client.MainClientActivity">-->
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
@@ -41,15 +40,14 @@
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <GridView
+        <!-- Updated RecyclerView with proper spacing -->
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/gridProducts"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:numColumns="2"
-            android:verticalSpacing="8dp"
-            android:horizontalSpacing="8dp"
             android:padding="8dp"
-            android:clipToPadding="false" />
+            android:clipToPadding="false"
+            android:scrollbars="vertical" />
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
