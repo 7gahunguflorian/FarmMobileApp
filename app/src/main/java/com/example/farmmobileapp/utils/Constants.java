@@ -8,6 +8,10 @@ public class Constants {
 
     // Order status
     public static final String ORDER_STATUS_PENDING = "PENDING";
+    public static final String ORDER_STATUS_CONFIRMED = "CONFIRMED";
+    public static final String ORDER_STATUS_PREPARING = "PREPARING";
+    public static final String ORDER_STATUS_READY_FOR_DELIVERY = "READY_FOR_DELIVERY";
+    public static final String ORDER_STATUS_IN_DELIVERY = "IN_DELIVERY";
     public static final String ORDER_STATUS_DELIVERED = "DELIVERED";
     public static final String ORDER_STATUS_CANCELLED = "CANCELLED";
 
