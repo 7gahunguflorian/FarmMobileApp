@@ -5,17 +5,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.farmmobileapp.R;
+import com.example.farmmobileapp.models.Order;
+import com.example.farmmobileapp.models.ApiResponse;
 import com.example.farmmobileapp.network.ApiService;
 import com.example.farmmobileapp.network.RetrofitClient;
-import com.example.farmmobileapp.models.Order;
 import com.example.farmmobileapp.utils.Constants;
+import com.example.farmmobileapp.utils.ErrorHandler;
 import com.example.farmmobileapp.utils.SessionManager;
 
 import java.text.SimpleDateFormat;
@@ -29,15 +33,26 @@ import retrofit2.Response;
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
 
     private Context context;
-    private List<Order> orderList;
+    private List<Order> orders;
     private ApiService apiService;
     private SessionManager sessionManager;
+    private boolean isFarmer;
+    private OnOrderStatusChangeListener listener;
 
-    public OrderAdapter(Context context, List<Order> orderList) {
+    public interface OnOrderStatusChangeListener {
+        void onStatusChange(Order order, String newStatus);
+    }
+
+    public OrderAdapter(Context context, List<Order> orders, boolean isFarmer) {
         this.context = context;
-        this.orderList = orderList;
+        this.orders = orders;
+        this.isFarmer = isFarmer;
         this.apiService = RetrofitClient.getClient().create(ApiService.class);
         this.sessionManager = SessionManager.getInstance(context);
+    }
+
+    public void setOnOrderStatusChangeListener(OnOrderStatusChangeListener listener) {
+        this.listener = listener;
     }
 
     @NonNull
@@ -49,108 +64,154 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
 
     @Override
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
-        Order order = orderList.get(position);
-
-        // Format order ID - handle both String and Long IDs
-        String orderIdDisplay = "Order #";
-        if (order.getId() != null) {
-            orderIdDisplay += order.getId().toString().substring(0, Math.min(5, order.getId().toString().length()));
-        } else {
-            orderIdDisplay += "N/A";
-        }
-        holder.tvOrderId.setText(orderIdDisplay);
-
-        // Format date
-        if (order.getCreatedAt() != null) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-            holder.tvOrderDate.setText(dateFormat.format(order.getCreatedAt()));
-        } else {
-            holder.tvOrderDate.setText("Date not available");
-        }
-
-        // Set product details
-        holder.tvProductName.setText(order.getProductName() != null ? order.getProductName() : "Unknown Product");
-        holder.tvQuantity.setText(order.getQuantity() + " units");
-        holder.tvTotal.setText(String.format(Locale.getDefault(), "$%.2f", order.getTotalPrice()));
-
-        // Set delivery location
-        holder.tvDeliveryLocation.setText("Delivery Location: " +
-                (order.getDeliveryLocation() != null ? order.getDeliveryLocation() : "Not specified"));
-
-        // Set status
-        holder.tvStatus.setText("Status: " +
-                (order.getStatus() != null ? order.getStatus() : "Unknown"));
-
-        // Set cancel button visibility based on status
-        if (Constants.ORDER_STATUS_PENDING.equals(order.getStatus()) && order.isRecentOrder()) {
-            holder.btnCancelOrder.setVisibility(View.VISIBLE);
-            holder.btnCancelOrder.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    cancelOrder(order, holder.getAdapterPosition());
-                }
-            });
-        } else {
-            holder.btnCancelOrder.setVisibility(View.GONE);
-        }
+        Order order = orders.get(position);
+        holder.bind(order);
     }
 
     @Override
     public int getItemCount() {
-        return orderList.size();
+        return orders.size();
     }
 
-    private void cancelOrder(Order order, final int position) {
-        Order orderUpdate = new Order();
-        orderUpdate.setStatus(Constants.ORDER_STATUS_CANCELLED);
-
-        apiService.updateOrderStatus(sessionManager.getAuthHeaderValue(), order.getId(), orderUpdate)
-                .enqueue(new Callback<Order>() {
-                    @Override
-                    public void onResponse(Call<Order> call, Response<Order> response) {
-                        if (response.isSuccessful()) {
-                            orderList.get(position).setStatus(Constants.ORDER_STATUS_CANCELLED);
-                            notifyItemChanged(position);
-                            Toast.makeText(context, "Order cancelled successfully", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(context, "Failed to cancel order: " + response.code(),
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<Order> call, Throwable t) {
-                        Toast.makeText(context, "Network error: " + t.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
-    public void updateData(List<Order> newOrders) {
-        this.orderList = newOrders;
+    public void updateOrders(List<Order> newOrders) {
+        this.orders = newOrders;
         notifyDataSetChanged();
     }
 
-    public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvOrderId;
-        TextView tvOrderDate;
-        TextView tvProductName;
-        TextView tvQuantity;
-        TextView tvTotal;
-        TextView tvDeliveryLocation;
-        TextView tvStatus;
-        Button btnCancelOrder;
+    class OrderViewHolder extends RecyclerView.ViewHolder {
+        private ImageView imageViewProduct;
+        private TextView textViewProductName;
+        private TextView textViewQuantity;
+        private TextView textViewTotalPrice;
+        private TextView textViewDeliveryLocation;
+        private TextView textViewStatus;
+        private TextView textViewDate;
+        private TextView textViewClientName;
+        private TextView textViewFarmerName;
+        private Button buttonAccept;
+        private Button buttonReject;
+        private Button buttonComplete;
 
         public OrderViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvOrderId = itemView.findViewById(R.id.textViewOrderId);
-            tvOrderDate = itemView.findViewById(R.id.textViewOrderDate);
-            tvProductName = itemView.findViewById(R.id.textViewProductName);
-            tvQuantity = itemView.findViewById(R.id.textViewQuantity);
-            tvTotal = itemView.findViewById(R.id.textViewTotal);
-            tvDeliveryLocation = itemView.findViewById(R.id.textViewDeliveryLocation);
-            tvStatus = itemView.findViewById(R.id.textViewStatus);
-            btnCancelOrder = itemView.findViewById(R.id.buttonCancelOrder);
+            imageViewProduct = itemView.findViewById(R.id.imageViewProduct);
+            textViewProductName = itemView.findViewById(R.id.textViewProductName);
+            textViewQuantity = itemView.findViewById(R.id.textViewQuantity);
+            textViewTotalPrice = itemView.findViewById(R.id.textViewTotalPrice);
+            textViewDeliveryLocation = itemView.findViewById(R.id.textViewDeliveryLocation);
+            textViewStatus = itemView.findViewById(R.id.textViewStatus);
+            textViewDate = itemView.findViewById(R.id.textViewDate);
+            textViewClientName = itemView.findViewById(R.id.textViewClientName);
+            textViewFarmerName = itemView.findViewById(R.id.textViewFarmerName);
+            buttonAccept = itemView.findViewById(R.id.buttonAccept);
+            buttonReject = itemView.findViewById(R.id.buttonReject);
+            buttonComplete = itemView.findViewById(R.id.buttonComplete);
+
+            // Set visibility of buttons based on user type
+            if (isFarmer) {
+                buttonAccept.setVisibility(View.VISIBLE);
+                buttonReject.setVisibility(View.VISIBLE);
+                buttonComplete.setVisibility(View.VISIBLE);
+            } else {
+                buttonAccept.setVisibility(View.GONE);
+                buttonReject.setVisibility(View.GONE);
+                buttonComplete.setVisibility(View.GONE);
+            }
+        }
+
+        public void bind(Order order) {
+            // Set product details
+            if (order.getProduct() != null) {
+                textViewProductName.setText(order.getProduct().getName());
+                if (order.getProduct().getImageUrl() != null && !order.getProduct().getImageUrl().isEmpty()) {
+                    Glide.with(context)
+                        .load(order.getProduct().getImageUrl())
+                        .placeholder(R.drawable.placeholder_product)
+                        .error(R.drawable.placeholder_product)
+                        .into(imageViewProduct);
+                } else {
+                    imageViewProduct.setImageResource(R.drawable.placeholder_product);
+                }
+            }
+
+            // Set order details
+            textViewQuantity.setText(String.format("Quantity: %.1f", order.getQuantity()));
+            textViewTotalPrice.setText(String.format("Total: $%.2f", order.getTotalPrice()));
+            textViewDeliveryLocation.setText("Delivery: " + order.getDeliveryLocation());
+            
+            // Set status with color
+            String status = order.getStatus();
+            textViewStatus.setText("Status: " + status);
+            switch (status) {
+                case "PENDING":
+                    textViewStatus.setTextColor(context.getResources().getColor(android.R.color.holo_orange_light));
+                    break;
+                case "ACCEPTED":
+                    textViewStatus.setTextColor(context.getResources().getColor(android.R.color.holo_green_light));
+                    break;
+                case "REJECTED":
+                    textViewStatus.setTextColor(context.getResources().getColor(android.R.color.holo_red_light));
+                    break;
+                case "COMPLETED":
+                    textViewStatus.setTextColor(context.getResources().getColor(android.R.color.holo_blue_light));
+                    break;
+            }
+
+            // Set date
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
+            if (order.getOrderDate() != null) {
+                textViewDate.setText("Ordered: " + dateFormat.format(order.getOrderDate()));
+            } else if (order.getCreatedAt() != null) {
+                textViewDate.setText("Ordered: " + dateFormat.format(order.getCreatedAt()));
+            }
+
+            // Set user names
+            if (order.getClient() != null) {
+                textViewClientName.setText("Client: " + order.getClient().getUsername());
+            }
+            if (order.getFarmer() != null) {
+                textViewFarmerName.setText("Farmer: " + order.getFarmer().getUsername());
+            }
+
+            // Set button states based on order status
+            if (isFarmer) {
+                switch (order.getStatus()) {
+                    case "PENDING":
+                        buttonAccept.setVisibility(View.VISIBLE);
+                        buttonReject.setVisibility(View.VISIBLE);
+                        buttonComplete.setVisibility(View.GONE);
+                        break;
+                    case "ACCEPTED":
+                        buttonAccept.setVisibility(View.GONE);
+                        buttonReject.setVisibility(View.GONE);
+                        buttonComplete.setVisibility(View.VISIBLE);
+                        break;
+                    default:
+                        buttonAccept.setVisibility(View.GONE);
+                        buttonReject.setVisibility(View.GONE);
+                        buttonComplete.setVisibility(View.GONE);
+                        break;
+                }
+
+                // Set click listeners for buttons
+                buttonAccept.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onStatusChange(order, "ACCEPTED");
+                    }
+                });
+
+                buttonReject.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onStatusChange(order, "REJECTED");
+                    }
+                });
+
+                buttonComplete.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onStatusChange(order, "COMPLETED");
+                    }
+                });
+            }
         }
     }
 }

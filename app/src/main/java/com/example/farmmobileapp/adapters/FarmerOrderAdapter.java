@@ -15,8 +15,9 @@ import com.example.farmmobileapp.R;
 import com.example.farmmobileapp.network.ApiService;
 import com.example.farmmobileapp.network.RetrofitClient;
 import com.example.farmmobileapp.models.Order;
-import com.example.farmmobileapp.utils.Constants;
+import com.example.farmmobileapp.models.ApiResponse;
 import com.example.farmmobileapp.utils.SessionManager;
+import com.example.farmmobileapp.utils.ErrorHandler;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -29,15 +30,24 @@ import retrofit2.Response;
 public class FarmerOrderAdapter extends RecyclerView.Adapter<FarmerOrderAdapter.OrderViewHolder> {
 
     private Context context;
-    private List<Order> orderList;
+    private List<Order> orders;
     private ApiService apiService;
     private SessionManager sessionManager;
+    private OnOrderStatusChangeListener statusChangeListener;
 
-    public FarmerOrderAdapter(Context context, List<Order> orderList) {
+    public interface OnOrderStatusChangeListener {
+        void onOrderStatusChanged(Order order, String newStatus);
+    }
+
+    public FarmerOrderAdapter(Context context, List<Order> orders) {
         this.context = context;
-        this.orderList = orderList;
+        this.orders = orders;
         this.apiService = RetrofitClient.getClient().create(ApiService.class);
         this.sessionManager = SessionManager.getInstance(context);
+    }
+
+    public void setOnOrderStatusChangeListener(OnOrderStatusChangeListener listener) {
+        this.statusChangeListener = listener;
     }
 
     @NonNull
@@ -49,113 +59,66 @@ public class FarmerOrderAdapter extends RecyclerView.Adapter<FarmerOrderAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
-        Order order = orderList.get(position);
-
-        // Format order ID - handle both String and Long IDs
-        String orderIdDisplay = "Order #";
-        if (order.getId() != null) {
-            orderIdDisplay += order.getId().toString().substring(0, Math.min(5, order.getId().toString().length()));
-        } else {
-            orderIdDisplay += "N/A";
-        }
-        holder.tvOrderId.setText(orderIdDisplay);
-
-        // Format date
-        if (order.getCreatedAt() != null) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-            holder.tvOrderDate.setText(dateFormat.format(order.getCreatedAt()));
-        } else {
-            holder.tvOrderDate.setText("Date not available");
-        }
-
-        // Set product details
-        holder.tvProductName.setText(order.getProductName() != null ? order.getProductName() : "Unknown Product");
-        holder.tvQuantity.setText(order.getQuantity() + " units");
-        holder.tvTotal.setText(String.format(Locale.getDefault(), "$%.2f", order.getTotalPrice()));
-
-        // Set client information
-        holder.tvClientName.setText("Client: " +
-                (order.getClientName() != null ? order.getClientName() : "Unknown Client"));
-        holder.tvDeliveryLocation.setText("Delivery to: " +
-                (order.getDeliveryLocation() != null ? order.getDeliveryLocation() : "Not specified"));
-
-        // Set status
-        holder.tvStatus.setText("Status: " +
-                (order.getStatus() != null ? order.getStatus() : "Unknown"));
-
-        // Set button visibility based on status
-        if (Constants.ORDER_STATUS_PENDING.equals(order.getStatus())) {
-            holder.btnAcceptOrder.setVisibility(View.VISIBLE);
-            holder.btnAcceptOrder.setText("Mark as Delivered");
-            holder.btnAcceptOrder.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    markOrderAsDelivered(order, holder.getAdapterPosition());
-                }
-            });
-        } else {
-            holder.btnAcceptOrder.setVisibility(View.GONE);
-        }
+        Order order = orders.get(position);
+        holder.bind(order);
     }
 
     @Override
     public int getItemCount() {
-        return orderList.size();
+        return orders.size();
     }
 
-    private void markOrderAsDelivered(Order order, final int position) {
-        Order orderUpdate = new Order();
-        orderUpdate.setStatus(Constants.ORDER_STATUS_DELIVERED);
-
-        apiService.updateOrderStatus(sessionManager.getAuthHeaderValue(), order.getId(), orderUpdate)
-                .enqueue(new Callback<Order>() {
-                    @Override
-                    public void onResponse(Call<Order> call, Response<Order> response) {
-                        if (response.isSuccessful()) {
-                            orderList.get(position).setStatus(Constants.ORDER_STATUS_DELIVERED);
-                            notifyItemChanged(position);
-                            Toast.makeText(context, "Order marked as delivered", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(context, "Failed to update order: " + response.code(),
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<Order> call, Throwable t) {
-                        Toast.makeText(context, "Network error: " + t.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
-    public void updateData(List<Order> newOrders) {
-        this.orderList = newOrders;
+    public void updateOrders(List<Order> newOrders) {
+        this.orders.clear();
+        this.orders.addAll(newOrders);
         notifyDataSetChanged();
     }
 
-    public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvOrderId;
-        TextView tvOrderDate;
-        TextView tvProductName;
-        TextView tvQuantity;
-        TextView tvTotal;
-        TextView tvClientName;
-        TextView tvDeliveryLocation;
-        TextView tvStatus;
-        Button btnAcceptOrder;
+    class OrderViewHolder extends RecyclerView.ViewHolder {
+        private TextView textViewOrderId;
+        private TextView textViewClientName;
+        private TextView textViewProductName;
+        private TextView textViewQuantity;
+        private TextView textViewTotalPrice;
+        private TextView textViewStatus;
+        private TextView textViewOrderDate;
+        private Button buttonAccept;
+        private Button buttonReject;
 
-        public OrderViewHolder(@NonNull View itemView) {
+        OrderViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvOrderId = itemView.findViewById(R.id.textViewOrderId);
-            tvOrderDate = itemView.findViewById(R.id.textViewOrderDate);
-            tvProductName = itemView.findViewById(R.id.textViewProductName);
-            tvQuantity = itemView.findViewById(R.id.textViewQuantity);
-            tvTotal = itemView.findViewById(R.id.textViewTotal);
-            tvClientName = itemView.findViewById(R.id.textViewClientName);
-            tvDeliveryLocation = itemView.findViewById(R.id.textViewDeliveryLocation);
-            tvStatus = itemView.findViewById(R.id.textViewStatus);
-            btnAcceptOrder = itemView.findViewById(R.id.buttonAcceptOrder);
+            textViewOrderId = itemView.findViewById(R.id.textViewOrderId);
+            textViewClientName = itemView.findViewById(R.id.textViewClientName);
+            textViewProductName = itemView.findViewById(R.id.textViewProductName);
+            textViewQuantity = itemView.findViewById(R.id.textViewQuantity);
+            textViewTotalPrice = itemView.findViewById(R.id.textViewTotalPrice);
+            textViewStatus = itemView.findViewById(R.id.textViewStatus);
+            textViewOrderDate = itemView.findViewById(R.id.textViewOrderDate);
+            buttonAccept = itemView.findViewById(R.id.buttonAccept);
+            buttonReject = itemView.findViewById(R.id.buttonReject);
+        }
+
+        void bind(Order order) {
+            textViewOrderId.setText(String.format("Order #%d", order.getId()));
+            textViewClientName.setText(order.getClientName());
+            textViewProductName.setText(order.getProductName());
+            textViewQuantity.setText(String.format("Quantity: %.1f", order.getQuantity()));
+            textViewTotalPrice.setText(String.format("Total: $%.2f", order.getTotalPrice()));
+            textViewStatus.setText(order.getStatus());
+            textViewOrderDate.setText(new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+                .format(order.getOrderDate()));
+
+            buttonAccept.setOnClickListener(v -> {
+                if (statusChangeListener != null) {
+                    statusChangeListener.onOrderStatusChanged(order, "CONFIRMED");
+                }
+            });
+
+            buttonReject.setOnClickListener(v -> {
+                if (statusChangeListener != null) {
+                    statusChangeListener.onOrderStatusChanged(order, "CANCELLED");
+                }
+            });
         }
     }
 }

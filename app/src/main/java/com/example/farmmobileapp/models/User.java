@@ -1,6 +1,9 @@
 package com.example.farmmobileapp.models;
 
-public class User {
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class User implements Parcelable {
     private Long id;
     private String name;
     private String username;
@@ -18,6 +21,51 @@ public class User {
         this.email = email;
         this.role = role;
     }
+
+    protected User(Parcel in) {
+        if (in.readByte() == 0) {
+            id = null;
+        } else {
+            id = in.readLong();
+        }
+        name = in.readString();
+        username = in.readString();
+        email = in.readString();
+        role = in.readString();
+        profileImageUrl = in.readString();
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        if (id == null) {
+            dest.writeByte((byte) 0);
+        } else {
+            dest.writeByte((byte) 1);
+            dest.writeLong(id);
+        }
+        dest.writeString(name);
+        dest.writeString(username);
+        dest.writeString(email);
+        dest.writeString(role);
+        dest.writeString(profileImageUrl);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<User> CREATOR = new Creator<User>() {
+        @Override
+        public User createFromParcel(Parcel in) {
+            return new User(in);
+        }
+
+        @Override
+        public User[] newArray(int size) {
+            return new User[size];
+        }
+    };
 
     // Getters and setters
     public Long getId() {

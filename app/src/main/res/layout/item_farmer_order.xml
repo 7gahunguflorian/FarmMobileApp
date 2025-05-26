@@ -124,7 +124,37 @@
             android:background="@drawable/bg_button"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:text="Mark as Delivered"
+            android:text="Accept"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toStartOf="@+id/buttonRejectOrder"
+            app:layout_constraintTop_toBottomOf="@+id/textViewStatus" />
+
+        <Button
+            android:id="@+id/buttonRejectOrder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_button_red"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="Reject"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toStartOf="@+id/buttonCompleteOrder"
+            app:layout_constraintTop_toBottomOf="@+id/textViewStatus" />
+
+        <Button
+            android:id="@+id/buttonCompleteOrder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_button_green"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="Complete"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="parent"

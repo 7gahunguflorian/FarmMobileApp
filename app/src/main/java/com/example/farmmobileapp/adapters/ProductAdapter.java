@@ -1,54 +1,61 @@
 package com.example.farmmobileapp.adapters;
 
 import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.model.GlideUrl;
+import com.bumptech.glide.load.model.LazyHeaders;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.farmmobileapp.R;
-import com.example.farmmobileapp.activities.OrderFormActivity;
 import com.example.farmmobileapp.models.Product;
-import com.example.farmmobileapp.network.RetrofitClient;
 import com.example.farmmobileapp.utils.Constants;
+import com.example.farmmobileapp.utils.ImageUtils;
+import com.example.farmmobileapp.utils.SessionManager;
+import com.example.farmmobileapp.network.RetrofitClient;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> {
-
-    private static final String TAG = "ProductAdapter";
-    private Context context;
     private List<Product> products;
-    private boolean isOwnerView;
+    private Context context;
+    private boolean showOrderButton;
+    private OnProductActionListener listener;
+    private OnOrderClickListener orderClickListener;
 
     public interface OnProductActionListener {
-        void onEditProduct(Product product);
-        void onDeleteProduct(Product product);
-        void onOrderProduct(Product product);
+        void onEditClick(Product product);
+        void onDeleteClick(Product product);
     }
 
-    private OnProductActionListener actionListener;
-
-    public ProductAdapter(Context context, List<Product> products) {
-        this(context, products, false);
+    public interface OnOrderClickListener {
+        void onOrderClick(Product product);
     }
 
-    public ProductAdapter(Context context, List<Product> products, boolean isOwnerView) {
+    public ProductAdapter(Context context, List<Product> products, boolean showOrderButton) {
         this.context = context;
         this.products = products;
-        this.isOwnerView = isOwnerView;
+        this.showOrderButton = showOrderButton;
     }
 
     public void setOnProductActionListener(OnProductActionListener listener) {
-        this.actionListener = listener;
+        this.listener = listener;
+    }
+
+    public void setOnOrderClickListener(OnOrderClickListener listener) {
+        this.orderClickListener = listener;
     }
 
     @NonNull
@@ -70,86 +77,99 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     }
 
     public void updateProducts(List<Product> newProducts) {
-        products.clear();
-        products.addAll(newProducts);
+        this.products = newProducts;
         notifyDataSetChanged();
     }
 
-    public class ProductViewHolder extends RecyclerView.ViewHolder {
-        ImageView imgProduct;
-        TextView tvProductName;
-        TextView tvFarmerName;
-        TextView tvPrice;
-        TextView tvQuantity;
-        Button btnAction1;
-        Button btnAction2;
+    class ProductViewHolder extends RecyclerView.ViewHolder {
+        private ImageView imageView;
+        private TextView nameTextView;
+        private TextView priceTextView;
+        private TextView descriptionTextView;
+        private TextView farmerNameTextView;
+        private TextView availableQtyTextView;
+        private Button orderButton;
+        private ImageButton editButton;
+        private ImageButton deleteButton;
 
         public ProductViewHolder(@NonNull View itemView) {
             super(itemView);
-            imgProduct = itemView.findViewById(R.id.imgProduct);
-            tvProductName = itemView.findViewById(R.id.tvProductName);
-            tvFarmerName = itemView.findViewById(R.id.tvFarmerName);
-            tvPrice = itemView.findViewById(R.id.tvPrice);
-            tvQuantity = itemView.findViewById(R.id.tvQuantity);
-            btnAction1 = itemView.findViewById(R.id.btnAction1);
-            btnAction2 = itemView.findViewById(R.id.btnAction2);
+            imageView = itemView.findViewById(R.id.imageViewProduct);
+            nameTextView = itemView.findViewById(R.id.textViewProductName);
+            priceTextView = itemView.findViewById(R.id.textViewPrice);
+            descriptionTextView = itemView.findViewById(R.id.textViewDescription);
+            farmerNameTextView = itemView.findViewById(R.id.textViewFarmerName);
+            availableQtyTextView = itemView.findViewById(R.id.textViewAvailableQty);
+            orderButton = itemView.findViewById(R.id.buttonOrder);
+            editButton = itemView.findViewById(R.id.buttonEdit);
+            deleteButton = itemView.findViewById(R.id.buttonDelete);
+
+            // Set visibility based on showOrderButton flag
+            orderButton.setVisibility(showOrderButton ? View.VISIBLE : View.GONE);
+            editButton.setVisibility(showOrderButton ? View.GONE : View.VISIBLE);
+            deleteButton.setVisibility(showOrderButton ? View.GONE : View.VISIBLE);
         }
 
         public void bind(Product product) {
-            tvProductName.setText(product.getName());
-            tvFarmerName.setText(product.getFarmerName() != null ? product.getFarmerName() : "Unknown Farmer");
-            tvPrice.setText(String.format(Locale.getDefault(), "$%.2f", product.getPrice()));
-            tvQuantity.setText(String.format(Locale.getDefault(), "%d available", product.getAvailableQuantity()));
+            nameTextView.setText(product.getName());
+            // Format price as integer with FBU currency
+            priceTextView.setText(String.format(Locale.getDefault(), "%,d FBU", product.getPrice().intValue()));
+            descriptionTextView.setText(product.getDescription());
+            farmerNameTextView.setText("Farmer: " + product.getFarmerName());
+            availableQtyTextView.setText(String.format(Locale.getDefault(), "Available: %d", product.getAvailableQuantity()));
 
+            // Load image using Glide
             if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
                 String imageUrl = product.getImageUrl();
-                if (!imageUrl.startsWith("http")) {
-                    if (imageUrl.startsWith("/")) {
-                        imageUrl = RetrofitClient.BASE_URL + imageUrl.substring(1);
-                    } else {
-                        imageUrl = RetrofitClient.BASE_URL + "images/" + imageUrl;
-                    }
+                // Remove leading slash and 'images/' prefix if present
+                if (imageUrl.startsWith("/")) {
+                    imageUrl = imageUrl.substring(1);
                 }
+                if (imageUrl.startsWith("images/")) {
+                    imageUrl = imageUrl.substring(7); // Remove "images/" prefix
+                }
+                // Construct full URL for product images without /api/
+                imageUrl = RetrofitClient.getBaseUrl().replace("/api", "") + "images/" + imageUrl;
 
-                Glide.with(context)
-                        .load(imageUrl)
+                // Get auth token from SessionManager
+                String authToken = SessionManager.getInstance(context).getAuthToken();
+                if (authToken != null) {
+                    // Create GlideUrl with auth header
+                    GlideUrl glideUrl = new GlideUrl(imageUrl, new LazyHeaders.Builder()
+                            .addHeader("Authorization", "Bearer " + authToken)
+                            .build());
+
+                    Glide.with(context)
+                        .load(glideUrl)
                         .placeholder(R.drawable.placeholder_product)
                         .error(R.drawable.placeholder_product)
-                        .into(imgProduct);
+                        .into(imageView);
+                } else {
+                    imageView.setImageResource(R.drawable.placeholder_product);
+                }
             } else {
-                imgProduct.setImageResource(R.drawable.placeholder_product);
+                imageView.setImageResource(R.drawable.placeholder_product);
             }
 
-            if (isOwnerView) {
-                btnAction1.setText("Edit");
-                btnAction1.setVisibility(View.VISIBLE);
-                btnAction1.setOnClickListener(v -> {
-                    if (actionListener != null) {
-                        actionListener.onEditProduct(product);
-                    }
-                });
-
-                btnAction2.setText("Delete");
-                btnAction2.setVisibility(View.VISIBLE);
-                btnAction2.setOnClickListener(v -> {
-                    if (actionListener != null) {
-                        actionListener.onDeleteProduct(product);
+            // Set click listeners
+            if (showOrderButton) {
+                orderButton.setOnClickListener(v -> {
+                    if (orderClickListener != null) {
+                        orderClickListener.onOrderClick(product);
                     }
                 });
             } else {
-                btnAction1.setText("Order Now");
-                btnAction1.setVisibility(View.VISIBLE);
-                btnAction1.setOnClickListener(v -> {
-                    if (actionListener != null) {
-                        actionListener.onOrderProduct(product);
-                    } else {
-                        Intent intent = new Intent(context, OrderFormActivity.class);
-                        intent.putExtra(Constants.EXTRA_PRODUCT_ID, product.getId().toString());
-                        context.startActivity(intent);
+                editButton.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onEditClick(product);
                     }
                 });
 
-                btnAction2.setVisibility(View.GONE);
+                deleteButton.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onDeleteClick(product);
+                    }
+                });
             }
         }
     }

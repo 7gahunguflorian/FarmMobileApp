@@ -29,7 +29,8 @@
                 android:background="@drawable/bg_circular"
                 android:scaleType="centerCrop"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"
+                android:contentDescription="@string/profile_image_desc"/>
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -118,6 +119,19 @@
         android:layout_weight="1"
         android:layout_margin="16dp"
         android:clipToPadding="false"
-        android:paddingBottom="16dp" />
+        android:paddingBottom="16dp"
+        android:importantForAccessibility="no"/>
+
+    <!-- Empty state view -->
+    <TextView
+        android:id="@+id/emptyView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="No products available at the moment"
+        android:textSize="16sp"
+        android:textColor="@color/text_secondary"
+        android:visibility="gone"
+        android:padding="16dp"/>
 
 </LinearLayout>

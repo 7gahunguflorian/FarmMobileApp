@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -70,39 +71,39 @@ public class RecyclerViewProductAdapter extends RecyclerView.Adapter<RecyclerVie
     public class ProductViewHolder extends RecyclerView.ViewHolder {
         private ImageView imgProduct;
         private TextView tvProductName;
-        private TextView tvFarmerName;
+        private TextView tvDescription;
         private TextView tvPrice;
         private TextView tvQuantity;
         private Button btnAction1;
-        private Button btnAction2;
+        private ImageButton btnAction2;
 
         public ProductViewHolder(@NonNull View itemView) {
             super(itemView);
-            imgProduct = itemView.findViewById(R.id.imgProduct);
-            tvProductName = itemView.findViewById(R.id.tvProductName);
-            tvFarmerName = itemView.findViewById(R.id.tvFarmerName);
-            tvPrice = itemView.findViewById(R.id.tvPrice);
-            tvQuantity = itemView.findViewById(R.id.tvQuantity);
-            btnAction1 = itemView.findViewById(R.id.btnAction1);
-            btnAction2 = itemView.findViewById(R.id.btnAction2);
+            imgProduct = itemView.findViewById(R.id.imageViewProduct);
+            tvProductName = itemView.findViewById(R.id.textViewProductName);
+            tvDescription = itemView.findViewById(R.id.textViewDescription);
+            tvPrice = itemView.findViewById(R.id.textViewPrice);
+            tvQuantity = itemView.findViewById(R.id.textViewAvailableQty);
+            btnAction1 = itemView.findViewById(R.id.buttonOrder);
+            btnAction2 = itemView.findViewById(R.id.buttonDelete);
         }
 
         public void bind(Product product, boolean isOwnerView) {
             // Set product details
             tvProductName.setText(product.getName());
-            tvFarmerName.setText(product.getFarmerName() != null ? product.getFarmerName() : "Unknown Farmer");
-            tvPrice.setText(String.format(Locale.getDefault(), "$%.2f", product.getPrice()));
+            tvDescription.setText(product.getDescription());
+            tvPrice.setText(String.format(Locale.getDefault(), "%,d FBU", product.getPrice().intValue()));
             tvQuantity.setText(String.format(Locale.getDefault(), "%d available", product.getAvailableQuantity()));
 
             // Load product image
             if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
                 String imageUrl = product.getImageUrl();
 
-                if (!imageUrl.startsWith("http")) {
+                if (imageUrl != null && !imageUrl.isEmpty()) {
                     if (imageUrl.startsWith("/")) {
-                        imageUrl = RetrofitClient.BASE_URL + imageUrl.substring(1);
+                        imageUrl = RetrofitClient.getBaseUrl() + imageUrl.substring(1);
                     } else {
-                        imageUrl = RetrofitClient.BASE_URL + "images/" + imageUrl;
+                        imageUrl = RetrofitClient.getBaseUrl() + "images/" + imageUrl;
                     }
                 }
 
@@ -123,7 +124,7 @@ public class RecyclerViewProductAdapter extends RecyclerView.Adapter<RecyclerVie
                 btnAction1.setText("Edit");
                 btnAction1.setContentDescription("Edit " + product.getName());
                 btnAction2.setVisibility(View.VISIBLE);
-                btnAction2.setText("Delete");
+                btnAction2.setImageResource(R.drawable.ic_delete);
                 btnAction2.setContentDescription("Delete " + product.getName());
 
                 btnAction1.setOnClickListener(v -> {

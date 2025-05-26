@@ -140,6 +140,7 @@
 
                     <!-- Quantity Input -->
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilQuantity"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
@@ -158,6 +159,7 @@
 
                     <!-- Delivery Location Input -->
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilDeliveryLocation"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"

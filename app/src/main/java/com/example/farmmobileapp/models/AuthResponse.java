@@ -20,4 +20,12 @@ public class AuthResponse {
     public void setUser(User user) {
         this.user = user;
     }
+
+    @Override
+    public String toString() {
+        return "AuthResponse{" +
+                "token='" + (token != null ? "present" : "null") + '\'' +
+                ", user=" + (user != null ? user.toString() : "null") +
+                '}';
+    }
 }

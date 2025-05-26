@@ -24,7 +24,7 @@
             android:layout_marginEnd="16dp" />
 
         <de.hdodenhof.circleimageview.CircleImageView
-            android:id="@+id/imgProfile"
+            android:id="@+id/imageViewProfile"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_gravity="end"
@@ -33,11 +33,36 @@
 
     </androidx.appcompat.widget.Toolbar>
 
+    <LinearLayout
+        android:id="@+id/buttonContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
+
+        <Button
+            android:id="@+id/buttonRecentOrders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Recent Orders" />
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/buttonLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Logout"
+        android:layout_margin="8dp"
+        app:layout_constraintTop_toBottomOf="@id/buttonContainer"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintTop_toBottomOf="@id/buttonLogout"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <!-- Updated RecyclerView with proper spacing -->

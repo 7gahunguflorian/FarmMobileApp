@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AgriConnect</string>
     <string name="search_products">Rechercher des produits...</string>
@@ -5,5 +6,129 @@
     <string name="product_image">Image du produit</string>
     <string name="place_order">Commander</string>
     <string name="btn_action_default">Action</string>
-    <string name="btn_action_default_desc">Action button</string>
+    <string name="btn_action_default_desc">Bouton d\'action</string>
+    <string name="profile_image_desc">Photo de profil</string>
+    <string name="profile_image">Photo de profil</string>
+    <string name="farmer_image">Photo du fermier</string>
+    <string name="image_requirements">Taille max: 1MB, Formats: JPG, PNG</string>
+    <string name="edit">Modifier</string>
+    <string name="delete">Supprimer</string>
+    <string name="select_image">Sélectionner une image</string>
+    <string name="save_product">Enregistrer le produit</string>
+    <string name="farmer_info">Informations du fermier</string>
+    <string name="available_quantity">Quantité disponible</string>
+    <string name="product_name">Nom du produit</string>
+    <string name="product_description">Description</string>
+    <string name="product_price">Prix (FBU)</string>
+    <string name="product_quantity">Quantité</string>
+    <string name="my_products">Mes produits</string>
+    <string name="add_product">Ajouter un produit</string>
+    <string name="no_products_found">Aucun produit trouvé</string>
+
+    <!-- Common strings -->
+    <string name="loading">Chargement...</string>
+    <string name="retry">Réessayer</string>
+    <string name="cancel">Annuler</string>
+    <string name="ok">OK</string>
+    <string name="error">Erreur</string>
+    <string name="success">Succès</string>
+    <string name="warning">Attention</string>
+
+    <!-- Dialog strings -->
+    <string name="dialog_confirm">Confirmer</string>
+    <string name="dialog_cancel">Annuler</string>
+    <string name="dialog_delete_title">Supprimer</string>
+    <string name="dialog_delete_message">Êtes-vous sûr de vouloir supprimer cet élément ?</string>
+    <string name="dialog_logout_title">Déconnexion</string>
+    <string name="dialog_logout_message">Êtes-vous sûr de vouloir vous déconnecter ?</string>
+
+    <!-- Error messages -->
+    <string name="error_network">Erreur de connexion. Veuillez vérifier votre connexion internet.</string>
+    <string name="error_server">Erreur du serveur. Veuillez réessayer plus tard.</string>
+    <string name="error_unauthorized">Session expirée. Veuillez vous reconnecter.</string>
+    <string name="error_validation">Veuillez vérifier vos informations et réessayer.</string>
+    <string name="error_image_size">L\'image ne doit pas dépasser 1MB</string>
+    <string name="error_image_format">Format d\'image non supporté. Utilisez JPG ou PNG</string>
+    <string name="error_quantity">Quantité invalide</string>
+    <string name="error_price">Prix invalide</string>
+
+    <!-- Success messages -->
+    <string name="success_profile_updated">Profil mis à jour avec succès</string>
+    <string name="success_password_changed">Mot de passe modifié avec succès</string>
+    <string name="success_product_added">Produit ajouté avec succès</string>
+    <string name="success_product_updated">Produit mis à jour avec succès</string>
+    <string name="success_product_deleted">Produit supprimé avec succès</string>
+
+    <!-- Validation messages -->
+    <string name="validation_required">Ce champ est requis</string>
+    <string name="validation_min_length">Minimum %1$d caractères requis</string>
+    <string name="validation_max_length">Maximum %1$d caractères autorisés</string>
+    <string name="validation_min_value">Valeur minimum: %1$d FBU</string>
+    <string name="validation_max_value">Valeur maximum: %1$d FBU</string>
+    <string name="validation_invalid_email">Adresse email invalide</string>
+    <string name="validation_invalid_phone">Numéro de téléphone invalide</string>
+
+    <!-- Permission messages -->
+    <string name="permission_camera_rationale">L\'accès à la caméra est nécessaire pour prendre des photos</string>
+    <string name="permission_storage_rationale">L\'accès au stockage est nécessaire pour sauvegarder les images</string>
+    <string name="permission_denied">Permission refusée</string>
+    <string name="permission_required">Permission requise</string>
+
+    <!-- Authentication strings -->
+    <string name="login">Connexion</string>
+    <string name="register">Inscription</string>
+    <string name="email">Email</string>
+    <string name="password">Mot de passe</string>
+    <string name="confirm_password">Confirmer le mot de passe</string>
+    <string name="forgot_password">Mot de passe oublié ?</string>
+    <string name="name">Nom</string>
+    <string name="phone">Téléphone</string>
+    <string name="address">Adresse</string>
+    <string name="role">Rôle</string>
+    <string name="role_farmer">Fermier</string>
+    <string name="role_client">Client</string>
+
+    <!-- Authentication error messages -->
+    <string name="error_login">Erreur de connexion</string>
+    <string name="error_register">Erreur d\'inscription</string>
+    <string name="error_invalid_credentials">Email ou mot de passe incorrect</string>
+    <string name="error_email_exists">Cet email est déjà utilisé</string>
+    <string name="error_password_mismatch">Les mots de passe ne correspondent pas</string>
+
+    <!-- Profile strings -->
+    <string name="profile">Profil</string>
+    <string name="edit_profile">Modifier le profil</string>
+    <string name="save_profile">Enregistrer les modifications</string>
+    <string name="logout">Déconnexion</string>
+    <string name="change_password">Changer le mot de passe</string>
+    <string name="current_password">Mot de passe actuel</string>
+    <string name="new_password">Nouveau mot de passe</string>
+    <string name="confirm_new_password">Confirmer le nouveau mot de passe</string>
+
+    <!-- Order related strings -->
+    <string name="confirm_order">Confirmer la commande</string>
+    <string name="mark_delivered">Marquer comme livré</string>
+    <string name="order_status_pending">En attente</string>
+    <string name="order_status_confirmed">Confirmé</string>
+    <string name="order_status_delivered">Livré</string>
+    <string name="order_status_cancelled">Annulé</string>
+    <string name="order_placed_success">Commande passée avec succès !</string>
+    <string name="order_confirmed">Commande confirmée !</string>
+    <string name="order_delivered">Commande marquée comme livrée !</string>
+    <string name="order_cancelled">Commande annulée !</string>
+    <string name="error_placing_order">Erreur lors de la commande</string>
+    <string name="error_updating_order">Erreur lors de la mise à jour du statut</string>
+    <string name="error_loading_orders">Erreur lors du chargement des commandes</string>
+    <string name="no_orders_found">Aucune commande trouvée</string>
+    <string name="recent_orders">Commandes récentes</string>
+    <string name="my_orders">Mes commandes</string>
+    <string name="order_details">Détails de la commande</string>
+    <string name="order_date">Date de la commande</string>
+    <string name="delivery_location">Lieu de livraison</string>
+    <string name="order_status">Statut de la commande</string>
+    <string name="order_quantity">Quantité</string>
+    <string name="order_total">Total</string>
+    <string name="order_product">Produit</string>
+    <string name="order_farmer">Fermier</string>
+    <string name="order_client">Client</string>
 </resources>

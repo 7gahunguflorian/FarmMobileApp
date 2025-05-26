@@ -1,122 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/background_light">
+    android:layout_height="match_parent">
 
-    <!-- Header with profile -->
-    <androidx.cardview.widget.CardView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="4dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/background_light">
 
+        <!-- Header with profile -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/imageViewProfile"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:src="@drawable/ic_profile"
+                    android:background="@drawable/bg_circular"
+                    android:scaleType="centerCrop"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@string/profile_image_desc"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Welcome Back!"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Farmer Dashboard"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_secondary" />
+
+                </LinearLayout>
+                <Button
+                    android:id="@+id/buttonLogout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Logout"
+                    android:layout_margin="16dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Action buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
+            android:layout_margin="16dp"
+            android:weightSum="2">
 
-            <ImageView
-                android:id="@+id/imageViewProfile"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:src="@drawable/ic_profile"
-                android:background="@drawable/bg_circular"
-                android:scaleType="centerCrop"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="16dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Welcome Back!"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Farmer Dashboard"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_secondary" />
-
-            </LinearLayout>
             <Button
-                android:id="@+id/buttonLogout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Logout"
-                android:layout_margin="16dp" />
+                android:id="@+id/buttonMyProducts"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="My Products"
+                android:background="@drawable/bg_button"
+                android:textColor="@android:color/white"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/buttonAvailableProducts"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Available Products"
+                android:background="@drawable/bg_button"
+                android:textColor="@android:color/white"
+                android:textAllCaps="false" />
 
         </LinearLayout>
 
-    </androidx.cardview.widget.CardView>
+        <!-- Orders section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="Recent Orders"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary" />
 
-    <!-- Action buttons -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_margin="16dp"
-        android:weightSum="2">
-
-        <Button
-            android:id="@+id/buttonMyProducts"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
+        <!-- Orders RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewOrders"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="My Products"
-            android:background="@drawable/bg_button"
-            android:textColor="@android:color/white"
-            android:textAllCaps="false" />
-
-        <Button
-            android:id="@+id/buttonAvailableProducts"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="Available Products"
-            android:background="@drawable/bg_button"
-            android:textColor="@android:color/white"
-            android:textAllCaps="false" />
+            android:layout_margin="16dp"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp"
+            android:importantForAccessibility="no"/>
 
     </LinearLayout>
 
-    <!-- Orders section -->
-    <TextView
+    <ProgressBar
+        android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="8dp"
-        android:text="Recent Orders"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary" />
+        android:layout_gravity="center"
+        android:visibility="gone" />
 
-    <!-- Orders RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewOrders"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_margin="16dp"
-        android:clipToPadding="false"
-        android:paddingBottom="16dp" />
-
-</LinearLayout>
+</FrameLayout>

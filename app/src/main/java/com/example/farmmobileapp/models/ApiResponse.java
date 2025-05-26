@@ -1,14 +1,29 @@
 package com.example.farmmobileapp.models;
 
+import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
 // Generic API Response wrapper
 public class ApiResponse<T> {
-    private boolean success;
+    @SerializedName("success")
+    private boolean success = true; // Default to true since some endpoints don't include this field
+
+    @SerializedName("message")
     private String message;
+
+    @SerializedName("data")
     private T data;
+
+    @SerializedName("error")
     private String error;
+
+    // For direct response format (when data is at root level)
+    @SerializedName("token")
+    private String token;
+
+    @SerializedName("user")
+    private User user;
 
     // Constructors
     public ApiResponse() {}
@@ -37,6 +52,13 @@ public class ApiResponse<T> {
     }
 
     public T getData() {
+        // If data is null but we have direct fields, create an AuthResponse
+        if (data == null && token != null && !token.equals("present")) {
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setToken(token);
+            authResponse.setUser(user);
+            return (T) authResponse;
+        }
         return data;
     }
 
@@ -50,6 +72,18 @@ public class ApiResponse<T> {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    @Override
+    public String toString() {
+        return "ApiResponse{" +
+                "success=" + success +
+                ", message='" + message + '\'' +
+                ", data=" + (data != null ? data.toString() : "null") +
+                ", error='" + error + '\'' +
+                ", token=" + (token != null ? "present" : "null") +
+                ", user=" + (user != null ? user.toString() : "null") +
+                '}';
     }
 }
 
