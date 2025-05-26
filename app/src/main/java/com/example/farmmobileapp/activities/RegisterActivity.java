@@ -24,11 +24,13 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.farmmobileapp.R;
+import com.example.farmmobileapp.models.ApiResponse;
 import com.example.farmmobileapp.network.ApiService;
 import com.example.farmmobileapp.network.RetrofitClient;
 import com.example.farmmobileapp.models.AuthResponse;
 import com.example.farmmobileapp.models.RegisterRequest;
 import com.example.farmmobileapp.utils.SessionManager;
+import com.example.farmmobileapp.utils.ErrorHandler;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.File;
@@ -161,205 +163,35 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void registerUser(String name, String username, String email, String password, String role) {
-        progressBar.setVisibility(View.VISIBLE);
-
-        if (selectedImageUri != null) {
-            // Use the multipart registration with image
-            File file = getFileFromUri(selectedImageUri);
-            if (file != null) {
-                RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
-                MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", file.getName(), requestFile);
-
-                RequestBody nameBody = RequestBody.create(MediaType.parse("text/plain"), name);
-                RequestBody usernameBody = RequestBody.create(MediaType.parse("text/plain"), username);
-                RequestBody emailBody = RequestBody.create(MediaType.parse("text/plain"), email);
-                RequestBody passwordBody = RequestBody.create(MediaType.parse("text/plain"), password);
-                RequestBody roleBody = RequestBody.create(MediaType.parse("text/plain"), role);
-
-                apiService.registerWithImage(nameBody, usernameBody, emailBody, passwordBody, roleBody, filePart)
-                        .enqueue(createRegistrationCallback());
-            } else {
-                // Fallback to regular registration if image processing fails
-                registerWithoutImage(name, username, email, password, role);
-            }
-        } else {
-            // No image selected, use regular registration
-            registerWithoutImage(name, username, email, password, role);
-        }
-    }
-
-    private void registerWithoutImage(String name, String username, String email, String password, String role) {
-        RegisterRequest registerRequest = new RegisterRequest(name, username, email, password, role);
-        apiService.register(registerRequest).enqueue(createRegistrationCallback());
-    }
-
-    private Callback<AuthResponse> createRegistrationCallback() {
-        return new Callback<AuthResponse>() {
+        RegisterRequest request = new RegisterRequest(name, username, email, password, role);
+        apiService.register(request).enqueue(new Callback<ApiResponse<AuthResponse>>() {
             @Override
-            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+            public void onResponse(Call<ApiResponse<AuthResponse>> call, Response<ApiResponse<AuthResponse>> response) {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
-                    AuthResponse authResponse = response.body();
-                    sessionManager.saveAuthToken(authResponse.getToken());
-                    sessionManager.saveUser(authResponse.getUser());
-                    navigateBasedOnRole();
-                    finish();
+                    ApiResponse<AuthResponse> apiResponse = response.body();
+                    if (apiResponse.isSuccess() && apiResponse.getData() != null) {
+                        AuthResponse authResponse = apiResponse.getData();
+                        sessionManager.saveAuthToken(authResponse.getToken());
+                        sessionManager.saveUser(authResponse.getUser());
+                        navigateBasedOnRole();
+                    } else {
+                        String errorMessage = apiResponse.getMessage() != null ? 
+                            apiResponse.getMessage() : "Registration failed";
+                        Toast.makeText(RegisterActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                    }
                 } else {
-                    String errorMessage = "Registration failed";
-                    if (response.code() == 400) errorMessage = "Username or email already exists";
-                    else if (response.code() == 422) errorMessage = "Invalid input data";
-                    Toast.makeText(RegisterActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                    ErrorHandler.handleApiError(RegisterActivity.this, response);
                 }
             }
 
             @Override
-            public void onFailure(Call<AuthResponse> call, Throwable t) {
+            public void onFailure(Call<ApiResponse<AuthResponse>> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
-                Toast.makeText(RegisterActivity.this, "Network error: " + t.getMessage(),
-                        Toast.LENGTH_SHORT).show();
+                Toast.makeText(RegisterActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
-        };
+        });
     }
-
-//    private void registerUser(String name, String username, String email, String password, String role) {
-//        RegisterRequest registerRequest = new RegisterRequest(name, username, email, password, role);
-//
-//        apiService.register(registerRequest).enqueue(new Callback<AuthResponse>() {
-//            @Override
-//            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-//                if (response.isSuccessful() && response.body() != null) {
-//                    AuthResponse authResponse = response.body();
-//
-//                    // Save token and user information
-//                    sessionManager.saveAuthToken(authResponse.getToken());
-//                    sessionManager.saveUser(authResponse.getUser());
-//
-//                    // Upload profile image if selected
-//                    if (selectedImageUri != null) {
-//                        uploadProfileImage();
-//                    } else {
-//                        // No image selected, proceed to main activity
-//                        progressBar.setVisibility(View.GONE);
-//                        navigateBasedOnRole();
-//                        finish();
-//                    }
-//                } else {
-//                    progressBar.setVisibility(View.GONE);
-//                    String errorMessage = "Registration failed";
-//                    if (response.code() == 400) {
-//                        errorMessage = "Username or email already exists";
-//                    } else if (response.code() == 422) {
-//                        errorMessage = "Invalid input data";
-//                    }
-//                    Toast.makeText(RegisterActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<AuthResponse> call, Throwable t) {
-//                progressBar.setVisibility(View.GONE);
-//                Toast.makeText(RegisterActivity.this, "Network error: " + t.getMessage(),
-//                        Toast.LENGTH_SHORT).show();
-//            }
-//        });
-//    }
-//    private void uploadProfileImage() {
-//        File file = getFileFromUri(selectedImageUri);
-//        if (file == null) {
-//            progressBar.setVisibility(View.GONE);
-//            navigateBasedOnRole();
-//            finish();
-//            return;
-//        }
-//
-//        RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
-//        MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", file.getName(), requestFile);
-//
-//        // Add other registration fields as part of the multipart request
-//        RequestBody name = RequestBody.create(MediaType.parse("text/plain"), etName.getText().toString());
-//        RequestBody username = RequestBody.create(MediaType.parse("text/plain"), etUsername.getText().toString());
-//        RequestBody email = RequestBody.create(MediaType.parse("text/plain"), etEmail.getText().toString());
-//        RequestBody password = RequestBody.create(MediaType.parse("text/plain"), etPassword.getText().toString());
-//        RequestBody role = RequestBody.create(MediaType.parse("text/plain"), rbFarmer.isChecked() ? "FARMER" : "CLIENT");
-//
-//        apiService.registerWithImage(name, username, email, password, role, filePart)
-//                .enqueue(new Callback<AuthResponse>() {
-//                    @Override
-//                    public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-//                        progressBar.setVisibility(View.GONE);
-//                        if (response.isSuccessful() && response.body() != null) {
-//                            AuthResponse authResponse = response.body();
-//                            sessionManager.saveAuthToken(authResponse.getToken());
-//                            sessionManager.saveUser(authResponse.getUser());
-//                            navigateBasedOnRole();
-//                        } else {
-//                            Toast.makeText(RegisterActivity.this, "Registration failed", Toast.LENGTH_SHORT).show();
-//                        }
-//                        finish();
-//                    }
-//
-//                    @Override
-//                    public void onFailure(Call<AuthResponse> call, Throwable t) {
-//                        progressBar.setVisibility(View.GONE);
-//                        Toast.makeText(RegisterActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-//                        finish();
-//                    }
-//                });
-//    }
-
-//    private void uploadProfileImage() {
-//        String filePath = getRealPathFromURI(selectedImageUri);
-//        if (filePath == null) {
-//            // Failed to get file path, proceed without image
-//            progressBar.setVisibility(View.GONE);
-//            navigateBasedOnRole();
-//            finish();
-//            return;
-//        }
-//
-//        File file = new File(filePath);
-//        if (!file.exists()) {
-//            // File doesn't exist, proceed without image
-//            progressBar.setVisibility(View.GONE);
-//            navigateBasedOnRole();
-//            finish();
-//            return;
-//        }
-//
-//        RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
-//        MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", file.getName(), requestFile);
-//
-//        apiService.uploadProfileImage(sessionManager.getAuthHeaderValue(), filePart)
-//                .enqueue(new Callback<Void>() {
-//                    @Override
-//                    public void onResponse(Call<Void> call, Response<Void> response) {
-//                        progressBar.setVisibility(View.GONE);
-//
-//                        if (response.isSuccessful()) {
-//                            Toast.makeText(RegisterActivity.this, "Registration successful",
-//                                    Toast.LENGTH_SHORT).show();
-//                        } else {
-//                            Toast.makeText(RegisterActivity.this, "Profile image upload failed",
-//                                    Toast.LENGTH_SHORT).show();
-//                        }
-//
-//                        // Navigate regardless of image upload success
-//                        navigateBasedOnRole();
-//                        finish();
-//                    }
-//
-//                    @Override
-//                    public void onFailure(Call<Void> call, Throwable t) {
-//                        progressBar.setVisibility(View.GONE);
-//                        Toast.makeText(RegisterActivity.this, "Image upload failed: " + t.getMessage(),
-//                                Toast.LENGTH_SHORT).show();
-//
-//                        // Navigate even if image upload fails
-//                        navigateBasedOnRole();
-//                        finish();
-//                    }
-//                });
-//    }
 
     private void navigateBasedOnRole() {
         if (sessionManager.getUser() != null) {
@@ -393,17 +225,6 @@ public class RegisterActivity extends AppCompatActivity {
                     PERMISSION_REQUEST_CODE);
         }
     }
-
-//    private boolean checkPermission() {
-//        return ContextCompat.checkSelfPermission(this,
-//                Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-//    }
-
-//    private void requestPermission() {
-//        ActivityCompat.requestPermissions(this,
-//                new String[] { Manifest.permission.READ_EXTERNAL_STORAGE },
-//                PERMISSION_REQUEST_CODE);
-//    }
 
     private void pickImageFromGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK);
@@ -461,20 +282,4 @@ public class RegisterActivity extends AppCompatActivity {
             return null;
         }
     }
-
-//    private String getRealPathFromURI(Uri contentUri) {
-//        String[] proj = { MediaStore.Images.Media.DATA };
-//        Cursor cursor = getContentResolver().query(contentUri, proj, null, null, null);
-//
-//        if (cursor == null) {
-//            return contentUri.getPath();
-//        }
-//
-//        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-//        cursor.moveToFirst();
-//        String path = cursor.getString(column_index);
-//        cursor.close();
-//
-//        return path;
-//    }
 }
