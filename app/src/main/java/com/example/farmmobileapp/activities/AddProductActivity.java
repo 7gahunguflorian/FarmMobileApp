@@ -10,6 +10,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -24,11 +25,14 @@ import com.example.farmmobileapp.R;
 import com.example.farmmobileapp.network.ApiService;
 import com.example.farmmobileapp.network.RetrofitClient;
 import com.example.farmmobileapp.models.Product;
+import com.example.farmmobileapp.models.ApiResponse;
 import com.example.farmmobileapp.utils.SessionManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -75,13 +79,13 @@ public class AddProductActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        etProductName = findViewById(R.id.editTextProductName);
-        etDescription = findViewById(R.id.editTextDescription);
-        etPrice = findViewById(R.id.editTextPrice);
-        etAvailableQuantity = findViewById(R.id.editTextAvailableQuantity);
-        imgProductPreview = findViewById(R.id.imageViewProductPreview);
+        etProductName = findViewById(R.id.etName);
+        etDescription = findViewById(R.id.etDescription);
+        etPrice = findViewById(R.id.etPrice);
+        etAvailableQuantity = findViewById(R.id.etQuantity);
+        imgProductPreview = findViewById(R.id.imageViewProduct);
         btnSelectImage = findViewById(R.id.buttonSelectImage);
-        btnAddProduct = findViewById(R.id.buttonAddProduct);
+        btnAddProduct = findViewById(R.id.buttonSave);
         progressBar = findViewById(R.id.progressBar);
     }
 
@@ -108,7 +112,7 @@ public class AddProductActivity extends AppCompatActivity {
                 }
         );
 
-        // Permission launcher
+        // Permission launcher - updated for Android 13+ compatibility
         permissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 isGranted -> {
@@ -120,14 +124,31 @@ public class AddProductActivity extends AppCompatActivity {
                 }
         );
     }
+    private boolean checkStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED;
+        } else {
+            return ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+        }
+    }
 
+    private void requestStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES);
+        } else {
+            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+    }
+
+    // Update your setupClickListeners method
     private void setupClickListeners() {
         btnSelectImage.setOnClickListener(v -> {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
+            if (checkStoragePermission()) {
                 openImagePicker();
             } else {
-                permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+                requestStoragePermission();
             }
         });
 
@@ -197,7 +218,7 @@ public class AddProductActivity extends AppCompatActivity {
         try {
             double price = Double.parseDouble(priceStr);
             if (price <= 0) {
-                etPrice.setError("Price must be greater than 0");
+                etPrice.setError("Price must be greater than 0 FBU");
                 etPrice.requestFocus();
                 return false;
             }
@@ -230,140 +251,87 @@ public class AddProductActivity extends AppCompatActivity {
     }
 
     private void addProduct() {
-        progressBar.setVisibility(View.VISIBLE);
-        btnAddProduct.setEnabled(false);
+        showLoading(true);
 
-        try {
-            String name = etProductName.getText().toString().trim();
-            String description = etDescription.getText().toString().trim();
-            double price = Double.parseDouble(etPrice.getText().toString().trim());
-            int availableQuantity = Integer.parseInt(etAvailableQuantity.getText().toString().trim());
+        Product product = new Product();
+        product.setName(etProductName.getText().toString().trim());
+        product.setDescription(etDescription.getText().toString().trim());
+        product.setPrice(new BigDecimal(etPrice.getText().toString().trim()));
+        product.setAvailableQuantity(Integer.parseInt(etAvailableQuantity.getText().toString().trim()));
 
-            // Create product object
-            Product product = new Product();
-            product.setName(name);
-            product.setDescription(description);
-            product.setPrice(price);
-            product.setAvailableQuantity(availableQuantity);
-
-            // First create the product
-            Call<Product> call = apiService.createProduct(sessionManager.getAuthHeaderValue(), product);
-            call.enqueue(new Callback<Product>() {
-                @Override
-                public void onResponse(Call<Product> call, Response<Product> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        Product createdProduct = response.body();
-
-                        // If image is selected, upload it
-                        if (selectedImageUri != null) {
-                            uploadProductImage(createdProduct.getId());
-                        } else {
-                            // Product created successfully without image
-                            progressBar.setVisibility(View.GONE);
-                            btnAddProduct.setEnabled(true);
-                            Toast.makeText(AddProductActivity.this, "Product added successfully!", Toast.LENGTH_LONG).show();
-
-                            // Set result and finish
-                            setResult(RESULT_OK);
-                            finish();
-                        }
+        Call<Product> call = apiService.createProduct(sessionManager.getAuthHeaderValue(), product);
+        call.enqueue(new Callback<Product>() {
+            @Override
+            public void onResponse(Call<Product> call, Response<Product> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Product createdProduct = response.body();
+                    if (selectedImageUri != null) {
+                        uploadProductImage(createdProduct.getId());
                     } else {
-                        progressBar.setVisibility(View.GONE);
-                        btnAddProduct.setEnabled(true);
-
-                        String errorMessage = "Failed to add product";
-                        if (response.code() == 400) {
-                            errorMessage = "Invalid product data";
-                        } else if (response.code() == 401) {
-                            errorMessage = "Please login again";
-                            sessionManager.logout();
-                            // Navigate back to login
-                            Intent loginIntent = new Intent(AddProductActivity.this, LoginActivity.class);
-                            loginIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(loginIntent);
-                            finish();
-                            return;
-                        }
-                        Toast.makeText(AddProductActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                        showLoading(false);
+                        Toast.makeText(AddProductActivity.this, "Product added successfully", Toast.LENGTH_SHORT).show();
+                        finish();
                     }
+                } else {
+                    showLoading(false);
+                    String errorMessage = "Failed to add product";
+                    try {
+                        if (response.errorBody() != null) {
+                            errorMessage = response.errorBody().string();
+                        }
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error reading error body", e);
+                    }
+                    Toast.makeText(AddProductActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
                 }
+            }
 
-                @Override
-                public void onFailure(Call<Product> call, Throwable t) {
-                    progressBar.setVisibility(View.GONE);
-                    btnAddProduct.setEnabled(true);
-                    Log.e(TAG, "Network error adding product", t);
-                    Toast.makeText(AddProductActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-
-        } catch (Exception e) {
-            progressBar.setVisibility(View.GONE);
-            btnAddProduct.setEnabled(true);
-            Log.e(TAG, "Error adding product", e);
-            Toast.makeText(this, "Error adding product: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+            @Override
+            public void onFailure(Call<Product> call, Throwable t) {
+                showLoading(false);
+                Toast.makeText(AddProductActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void uploadProductImage(Long productId) {
-        try {
-            // Convert URI to File
-            File imageFile = createFileFromUri(selectedImageUri);
-            if (imageFile == null) {
-                progressBar.setVisibility(View.GONE);
-                btnAddProduct.setEnabled(true);
-                Toast.makeText(this, "Product added but failed to upload image", Toast.LENGTH_SHORT).show();
+        File imageFile = createFileFromUri(selectedImageUri);
+        if (imageFile == null) {
+            showLoading(false);
+            Toast.makeText(this, "Error preparing image", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-                // Still set result as OK since product was created
-                setResult(RESULT_OK);
-                finish();
-                return;
+        RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), imageFile);
+        MultipartBody.Part imagePart = MultipartBody.Part.createFormData("file", imageFile.getName(), requestFile);
+
+        Call<Product> call = apiService.uploadProductImage(sessionManager.getAuthHeaderValue(), productId, imagePart);
+        call.enqueue(new Callback<Product>() {
+            @Override
+            public void onResponse(Call<Product> call, Response<Product> response) {
+                showLoading(false);
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(AddProductActivity.this, "Product added successfully", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    String errorMessage = "Failed to upload product image";
+                    try {
+                        if (response.errorBody() != null) {
+                            errorMessage = response.errorBody().string();
+                        }
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error reading error body", e);
+                    }
+                    Toast.makeText(AddProductActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                }
             }
 
-            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), imageFile);
-            MultipartBody.Part imagePart = MultipartBody.Part.createFormData("file", imageFile.getName(), requestFile);
-
-            Call<Void> call = apiService.uploadProductImage(sessionManager.getAuthHeaderValue(), productId, imagePart);
-            call.enqueue(new Callback<Void>() {
-                @Override
-                public void onResponse(Call<Void> call, Response<Void> response) {
-                    progressBar.setVisibility(View.GONE);
-                    btnAddProduct.setEnabled(true);
-
-                    if (response.isSuccessful()) {
-                        Toast.makeText(AddProductActivity.this, "Product added successfully with image!", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(AddProductActivity.this, "Product added but image upload failed", Toast.LENGTH_SHORT).show();
-                    }
-
-                    // Set result as OK and finish
-                    setResult(RESULT_OK);
-                    finish();
-                }
-
-                @Override
-                public void onFailure(Call<Void> call, Throwable t) {
-                    progressBar.setVisibility(View.GONE);
-                    btnAddProduct.setEnabled(true);
-                    Log.e(TAG, "Error uploading image", t);
-                    Toast.makeText(AddProductActivity.this, "Product added but image upload failed", Toast.LENGTH_SHORT).show();
-
-                    // Still set result as OK since product was created
-                    setResult(RESULT_OK);
-                    finish();
-                }
-            });
-
-        } catch (Exception e) {
-            progressBar.setVisibility(View.GONE);
-            btnAddProduct.setEnabled(true);
-            Log.e(TAG, "Error preparing image upload", e);
-            Toast.makeText(this, "Product added but failed to upload image", Toast.LENGTH_SHORT).show();
-
-            // Still set result as OK since product was created
-            setResult(RESULT_OK);
-            finish();
-        }
+            @Override
+            public void onFailure(Call<Product> call, Throwable t) {
+                showLoading(false);
+                Toast.makeText(AddProductActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private File createFileFromUri(Uri uri) {
@@ -384,7 +352,7 @@ public class AddProductActivity extends AppCompatActivity {
             inputStream.close();
 
             return tempFile;
-        } catch (Exception e) {
+        } catch (IOException e) {
             Log.e(TAG, "Error creating file from URI", e);
             return null;
         }
@@ -419,5 +387,10 @@ public class AddProductActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Keep Editing", null)
                 .show();
+    }
+
+    private void showLoading(boolean show) {
+        progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        btnAddProduct.setEnabled(!show);
     }
 }
