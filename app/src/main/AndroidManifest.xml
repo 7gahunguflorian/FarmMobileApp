@@ -69,6 +69,7 @@
         <!-- Main Farmer Activity -->
         <activity
             android:name=".activities.MainFarmerActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="false" />
 
         <!-- Order Form Activity -->
@@ -77,6 +78,25 @@
             android:exported="false"
             android:parentActivityName=".activities.MainClientActivity"
             android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".activities.MyProductsActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
+        <activity android:name=".activities.AvailableProductsActivity" />
+        <activity android:name=".activities.AddProductActivity" />
+        <activity
+            android:name=".activities.EditProductActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.ProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.RecentOrdersActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.CreateOrderActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.OrdersActivity"
+            android:exported="false" />
 
     </application>
 </manifest>
